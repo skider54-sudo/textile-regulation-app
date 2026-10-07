@@ -87,6 +87,10 @@ class ProductInputTest(unittest.TestCase):
         self.assertTrue(any("즉시 실행 순서" in value for value in markdown_values))
         self.assertTrue(any("완료 기준" in value for value in markdown_values))
 
+        action_list = next(value for value in markdown_values if 'class="action-list"' in value)
+        self.assertNotIn("\n", action_list)
+        self.assertEqual(action_list.count('class="action-step"'), 3)
+
     def test_composition_total_must_be_100_percent(self) -> None:
         app = self._open_input_page()
 

@@ -270,12 +270,8 @@ if matches:
     st.markdown("#### 1. 즉시 실행 순서")
     action_steps = _pipe_items(selected.get("즉시조치") or selected.get("대응방안"))
     step_html = "".join(
-        f"""
-        <div class="action-step">
-            <span class="action-index">{index:02d}</span>
-            <div>{escape(step)}</div>
-        </div>
-        """
+        f'<div class="action-step"><span class="action-index">{index:02d}</span>'
+        f'<div>{escape(step)}</div></div>'
         for index, step in enumerate(action_steps, start=1)
     )
     st.markdown(f'<div class="action-list">{step_html}</div>', unsafe_allow_html=True)
