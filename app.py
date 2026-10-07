@@ -2,8 +2,8 @@
 
 import streamlit as st
 
-from utils.data_loader import load_products, load_regulations
-from utils.ui import render_footer, setup_page, stat_card
+from texreg_core.data_loader import load_products, load_regulations
+from texreg_core.ui import render_footer, setup_page, stat_card
 
 
 setup_page("Home")

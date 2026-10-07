@@ -6,8 +6,8 @@ import re
 
 import streamlit as st
 
-from utils.data_loader import load_regulations
-from utils.ui import (
+from texreg_core.data_loader import load_regulations
+from texreg_core.ui import (
     page_heading,
     regulation_status_badge,
     render_footer,

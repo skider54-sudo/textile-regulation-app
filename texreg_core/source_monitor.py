@@ -23,7 +23,7 @@ from urllib.parse import parse_qs, urlparse, urlunparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from uuid import uuid4
 
-from utils.history import history_db_path
+from texreg_core.history import history_db_path
 
 
 CHECKER_VERSION = "1.0"

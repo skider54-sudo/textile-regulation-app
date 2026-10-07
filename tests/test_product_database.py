@@ -7,10 +7,10 @@ from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
-from utils.data_loader import load_regulations
-from utils.history import save_diagnosis_snapshot
-from utils.matching import diagnose_product
-from utils.source_monitor import check_regulation_sources
+from texreg_core.data_loader import load_regulations
+from texreg_core.history import save_diagnosis_snapshot
+from texreg_core.matching import diagnose_product
+from texreg_core.source_monitor import check_regulation_sources
 
 
 ROOT = Path(__file__).resolve().parents[1]

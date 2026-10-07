@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from utils.source_monitor import (
+from texreg_core.source_monitor import (
     SourceMonitorError,
     check_regulation_sources,
     fetch_official_source,

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from utils.source_monitor import validate_official_url
+from texreg_core.source_monitor import validate_official_url
 
 
 ROOT = Path(__file__).resolve().parents[1]

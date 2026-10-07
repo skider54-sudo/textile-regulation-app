@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from utils.history import (
+from texreg_core.history import (
     export_history_json,
     get_diagnosis_snapshot,
     initialize_history_db,

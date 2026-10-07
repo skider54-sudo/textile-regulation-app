@@ -97,7 +97,7 @@ def ruleset_fingerprint() -> str:
         BASE_DIR / "data" / "regulations.csv",
         BASE_DIR / "data" / "regulation_actions.csv",
         BASE_DIR / "data" / "regulation_timeline.csv",
-        BASE_DIR / "utils" / "matching.py",
+        BASE_DIR / "texreg_core" / "matching.py",
     ]
     for path in paths:
         digest.update(path.name.encode("utf-8"))

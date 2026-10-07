@@ -10,17 +10,17 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from utils.data_loader import load_products, load_regulations
-from utils.history import (
+from texreg_core.data_loader import load_products, load_regulations
+from texreg_core.history import (
     export_history_json,
     get_diagnosis_snapshot,
     history_db_path,
     list_diagnosis_history,
     save_diagnosis_snapshot,
 )
-from utils.matching import diagnose_product
-from utils.source_monitor import check_regulation_sources, latest_source_statuses
-from utils.ui import (
+from texreg_core.matching import diagnose_product
+from texreg_core.source_monitor import check_regulation_sources, latest_source_statuses
+from texreg_core.ui import (
     page_heading,
     regulation_status_badge,
     render_footer,

@@ -25,7 +25,7 @@
 │  ├─ 1_Product_Input.py
 │  ├─ 2_Diagnosis_Result.py
 │  └─ 3_Risk_Dashboard.py
-├─ utils/
+├─ texreg_core/
 │  ├─ data_loader.py
 │  ├─ history.py
 │  ├─ matching.py

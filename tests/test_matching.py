@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from utils.matching import build_dashboard_data, diagnose_product
+from texreg_core.matching import build_dashboard_data, diagnose_product
 
 
 ROOT = Path(__file__).resolve().parents[1]
