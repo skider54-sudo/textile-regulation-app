@@ -13,6 +13,9 @@ COUNTRY_ALIASES = {
     "미국": {"미국", "us", "usa", "unitedstates", "america"},
     "영국": {"영국", "uk", "unitedkingdom", "greatbritain", "britain"},
     "일본": {"일본", "jp", "japan"},
+    "중국": {"중국", "cn", "china", "prc", "peoplesrepublicofchina"},
+    "캐나다": {"캐나다", "ca", "canada"},
+    "호주": {"호주", "au", "australia", "commonwealthofaustralia"},
     "대한민국": {"대한민국", "한국", "kr", "korea", "southkorea", "republicofkorea"},
 }
 
@@ -99,12 +102,14 @@ def match_regulation(product: dict[str, Any], regulation: dict[str, Any]) -> dic
     chemical_hits = _contains_keyword(product.get("사용화학물질"), regulation.get("화학키워드"))
     process_hits = _contains_keyword(product.get("가공방법"), regulation.get("공정키워드"))
     material_hits = _contains_keyword(product.get("소재"), regulation.get("소재키워드"))
-    usage_hits = _contains_keyword(product.get("제품용도"), regulation.get("용도키워드"))
+    # 완제품/원단/신발 같은 제품 형태도 용도 규칙 판단에 함께 사용한다.
+    usage_context = f"{_text(product.get('제품형태'))} {_text(product.get('제품용도'))}"
+    usage_hits = _contains_keyword(usage_context, regulation.get("용도키워드"))
 
     rule_type = _text(regulation.get("매칭유형")) or "keyword"
     # 국가만으로 검토하는 규제와 특정 조건이 있어야 매칭되는 규제를 구분한다.
     if rule_type in {"country_adult_textile", "adult_use_required"} and _contains_keyword(
-        product.get("제품용도"), "유아|영아|아동|어린이"
+        usage_context, "유아|영아|아동|어린이"
     ):
         return None
     if rule_type == "pfas" and not (chemical_hits or process_hits):

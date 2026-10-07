@@ -106,6 +106,98 @@ class MatchingEngineTest(unittest.TestCase):
         self.assertIn("가정용 섬유제품 안전기준", regulation_names)
         self.assertIn("K-REACH 제품 내 중점관리물질 신고", regulation_names)
 
+    def test_china_child_product_matches_general_and_child_standards(self) -> None:
+        product = {
+            "제품명": "China Kids Hoodie",
+            "소재": "Cotton, Polyester",
+            "가공방법": "편직, 염색, 프린팅",
+            "사용화학물질": "안료 프린트",
+            "제품용도": "아동용 의류",
+            "수출국": "PRC",
+        }
+        result = diagnose_product(product, self.regulations)
+        regulation_names = {item["규제명"] for item in result["규제"]}
+        self.assertIn("China Product Quality & Textile Labelling", regulation_names)
+        self.assertIn("China GB 18401-2010", regulation_names)
+        self.assertIn("China GB 31701-2015", regulation_names)
+
+    def test_china_child_standard_does_not_match_adult_apparel(self) -> None:
+        product = {
+            "제품명": "China Adult Shirt",
+            "소재": "Cotton",
+            "가공방법": "편직, 염색",
+            "사용화학물질": "반응성염료",
+            "제품용도": "일상 의류",
+            "수출국": "중국",
+        }
+        result = diagnose_product(product, self.regulations)
+        regulation_names = {item["규제명"] for item in result["규제"]}
+        self.assertIn("China GB 18401-2010", regulation_names)
+        self.assertNotIn("China GB 31701-2015", regulation_names)
+
+    def test_canada_pfas_outerwear_matches_textile_and_toxic_rules(self) -> None:
+        product = {
+            "제품명": "Canada PFAS Rain Shell",
+            "소재": "Nylon",
+            "가공방법": "발수, 코팅",
+            "사용화학물질": "PFOA",
+            "제품용도": "아웃도어 의류",
+            "수출국": "Canada",
+        }
+        result = diagnose_product(product, self.regulations)
+        regulation_names = {item["규제명"] for item in result["규제"]}
+        self.assertIn("Canada Textile Labelling Act & Regulations", regulation_names)
+        self.assertIn("Canada Textile Flammability Regulations", regulation_names)
+        self.assertIn(
+            "Canada Prohibition of Certain Toxic Substances Regulations, 2025",
+            regulation_names,
+        )
+        self.assertNotIn("Canada Children's Sleepwear Regulations", regulation_names)
+
+    def test_canada_child_sleepwear_uses_dedicated_rule(self) -> None:
+        product = {
+            "제품명": "Canada Kids Pyjamas",
+            "소재": "Cotton",
+            "가공방법": "편직, 염색",
+            "사용화학물질": "반응성염료",
+            "제품용도": "아동용 잠옷",
+            "수출국": "캐나다",
+        }
+        result = diagnose_product(product, self.regulations)
+        regulation_names = {item["규제명"] for item in result["규제"]}
+        self.assertIn("Canada Textile Labelling Act & Regulations", regulation_names)
+        self.assertIn("Canada Children's Sleepwear Regulations", regulation_names)
+        self.assertNotIn("Canada Textile Flammability Regulations", regulation_names)
+
+    def test_australia_child_sleepwear_and_pfas_rules_are_conditional(self) -> None:
+        child_product = {
+            "제품명": "Australia Kids Pyjamas",
+            "소재": "Cotton",
+            "가공방법": "편직, 염색",
+            "사용화학물질": "반응성염료",
+            "제품용도": "아동용 잠옷",
+            "수출국": "AU",
+        }
+        child_result = diagnose_product(child_product, self.regulations)
+        child_names = {item["규제명"] for item in child_result["규제"]}
+        self.assertIn("Australia Care Labelling Information Standard 2023", child_names)
+        self.assertIn("Australia Children's Nightwear Safety Standard 2017", child_names)
+        self.assertNotIn("Australia IChEMS Schedule 7 PFAS", child_names)
+
+        pfas_product = {
+            "제품명": "Australia PFAS Outdoor Jacket",
+            "소재": "Nylon",
+            "가공방법": "발수, 코팅",
+            "사용화학물질": "PFAS계 불소수지",
+            "제품용도": "아웃도어 의류",
+            "수출국": "호주",
+        }
+        pfas_result = diagnose_product(pfas_product, self.regulations)
+        pfas_names = {item["규제명"] for item in pfas_result["규제"]}
+        self.assertIn("Australia Care Labelling Information Standard 2023", pfas_names)
+        self.assertIn("Australia IChEMS Schedule 7 PFAS", pfas_names)
+        self.assertNotIn("Australia Children's Nightwear Safety Standard 2017", pfas_names)
+
     def test_child_rules_require_child_product_use(self) -> None:
         product = {
             "제품명": "Adult Printed Jacket",

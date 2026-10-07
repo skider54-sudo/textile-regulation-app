@@ -19,7 +19,7 @@ st.markdown(
             <h1>복잡한 국내외 규제,<br>한눈에 명확하게.</h1>
             <p>제품 정보와 판매 시장을 바탕으로 관련 환경·화학물질 규제를 선별하고 Risk Score와 우선 대응과제를 제시합니다.</p>
             <div class="hero-tags">
-                <span>EU</span><span>미국</span><span>영국</span><span>일본</span><span>대한민국</span>
+                <span>EU</span><span>미국</span><span>영국</span><span>일본</span><span>중국</span><span>캐나다</span><span>호주</span><span>대한민국</span>
                 <span>{len(regulations)} Regulations</span>
             </div>
         </div>
@@ -67,7 +67,7 @@ stat_columns = st.columns(3)
 with stat_columns[0]:
     stat_card("예시 제품", f"{len(products)}개", "CSV에서 관리")
 with stat_columns[1]:
-    stat_card("규제 항목", f"{len(regulations)}개", "EU·미국·영국·일본·대한민국")
+    stat_card("규제 항목", f"{len(regulations)}개", "8개 판매 시장")
 with stat_columns[2]:
     stat_card("진단 방식", "규칙 기반", "국가·물질·공정·소재·용도")
 

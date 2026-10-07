@@ -35,6 +35,16 @@ ACTION_COLUMNS = [
     "실무주의사항",
     "공식출처",
 ]
+TIMELINE_COLUMNS = [
+    "국가",
+    "규제명",
+    "규제상태",
+    "발표일",
+    "확정일",
+    "주요시행일",
+    "유예기간",
+    "최근확인일",
+]
 
 
 def _validate_columns(frame: pd.DataFrame, required: list[str], file_name: str) -> None:
@@ -44,17 +54,33 @@ def _validate_columns(frame: pd.DataFrame, required: list[str], file_name: str) 
         raise ValueError(f"{file_name}에 필수 컬럼이 없습니다: {', '.join(missing)}")
 
 
+def _file_signature(paths: Iterable[Path]) -> tuple[tuple[str, int, int], ...]:
+    """CSV가 교체되면 Streamlit 캐시도 자동으로 갱신되게 한다."""
+    return tuple(
+        (str(path), path.stat().st_mtime_ns, path.stat().st_size)
+        for path in paths
+    )
+
+
 @st.cache_data(show_spinner=False)
-def load_products() -> pd.DataFrame:
+def _load_products_cached(signature: tuple[tuple[str, int, int], ...]) -> pd.DataFrame:
     """예시 제품 DB를 UTF-8 CSV에서 불러온다."""
+    del signature  # 함수 인자가 캐시 키로 사용되며, 본문에서는 파일을 직접 읽는다.
     frame = pd.read_csv(DATA_DIR / "products.csv", encoding="utf-8-sig").fillna("")
     _validate_columns(frame, PRODUCT_COLUMNS, "products.csv")
     return frame[PRODUCT_COLUMNS].copy()
 
 
+def load_products() -> pd.DataFrame:
+    """예시 제품 DB를 파일 변경 감지 캐시로 불러온다."""
+    product_path = DATA_DIR / "products.csv"
+    return _load_products_cached(_file_signature([product_path]))
+
+
 @st.cache_data(show_spinner=False)
-def load_regulations() -> pd.DataFrame:
+def _load_regulations_cached(signature: tuple[tuple[str, int, int], ...]) -> pd.DataFrame:
     """규제 DB와 실행형 대응방안 DB를 국가·규제명 기준으로 결합한다."""
+    del signature  # 규제 관련 CSV 중 하나라도 바뀌면 새 캐시 키가 된다.
     frame = pd.read_csv(DATA_DIR / "regulations.csv", encoding="utf-8-sig").fillna("")
     _validate_columns(frame, REGULATION_COLUMNS, "regulations.csv")
     actions = pd.read_csv(
@@ -62,12 +88,33 @@ def load_regulations() -> pd.DataFrame:
         encoding="utf-8-sig",
     ).fillna("")
     _validate_columns(actions, ACTION_COLUMNS, "regulation_actions.csv")
-    return frame.merge(
+    timeline = pd.read_csv(
+        DATA_DIR / "regulation_timeline.csv",
+        encoding="utf-8-sig",
+    ).fillna("")
+    _validate_columns(timeline, TIMELINE_COLUMNS, "regulation_timeline.csv")
+    merged = frame.merge(
         actions[ACTION_COLUMNS],
         on=["국가", "규제명"],
         how="left",
         validate="one_to_one",
+    )
+    return merged.merge(
+        timeline[TIMELINE_COLUMNS],
+        on=["국가", "규제명"],
+        how="left",
+        validate="one_to_one",
     ).fillna("")
+
+
+def load_regulations() -> pd.DataFrame:
+    """규제·대응·일정 CSV 변경을 감지해 항상 현재 DB를 반환한다."""
+    paths = [
+        DATA_DIR / "regulations.csv",
+        DATA_DIR / "regulation_actions.csv",
+        DATA_DIR / "regulation_timeline.csv",
+    ]
+    return _load_regulations_cached(_file_signature(paths))
 
 
 def merge_session_products(

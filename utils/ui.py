@@ -13,6 +13,12 @@ RISK_COLORS = {
     "낮음": ("#067647", "#ECFDF3"),
 }
 
+REGULATION_STATUS_COLORS = {
+    "시행 중": ("#067647", "#ECFDF3"),
+    "시행 예정": ("#B54708", "#FFFAEB"),
+    "제안·검토": ("#3538CD", "#EEF4FF"),
+}
+
 
 def setup_page(title: str) -> None:
     """페이지 기본 설정과 공통 스타일을 적용한다."""
@@ -138,6 +144,127 @@ def setup_page(title: str) -> None:
             padding: 1.35rem 1.45rem;
             box-shadow: 0 12px 34px rgba(17, 28, 66, .055);
         }
+        .input-guide {
+            background: linear-gradient(90deg, rgba(20, 40, 160, .07), rgba(20, 40, 160, .02));
+            border: 1px solid rgba(20, 40, 160, .14);
+            border-radius: 14px;
+            display: grid;
+            gap: 3px;
+            margin: 4px 0 18px;
+            padding: 16px 18px;
+        }
+        .input-guide__eyebrow { color: var(--blue); font-size: .72rem; font-weight: 800; letter-spacing: .13em; }
+        .input-guide strong { color: var(--ink); font-size: .98rem; }
+        .input-guide > span:last-child { color: var(--muted); font-size: .84rem; }
+        .input-section-heading {
+            align-items: center;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            gap: 13px;
+            margin: 0 0 18px;
+            padding: 2px 0 14px;
+        }
+        .input-section-number {
+            align-items: center;
+            background: var(--blue);
+            border-radius: 10px;
+            color: #fff;
+            display: inline-flex;
+            font-size: .72rem;
+            font-weight: 800;
+            height: 34px;
+            justify-content: center;
+            letter-spacing: .05em;
+            min-width: 38px;
+        }
+        .input-section-heading div { display: grid; gap: 2px; }
+        .input-section-heading strong { color: var(--ink); font-size: 1.04rem; }
+        .input-section-heading div span { color: var(--muted); font-size: .82rem; }
+        .input-subheading {
+            border-top: 1px solid var(--line);
+            color: var(--ink);
+            font-size: .9rem;
+            font-weight: 750;
+            margin: 18px 0 12px;
+            padding-top: 16px;
+        }
+        .composition-total {
+            border-radius: 9px;
+            font-size: .82rem;
+            font-weight: 700;
+            margin: 7px 0 2px;
+            padding: 9px 12px;
+        }
+        .composition-total.valid { background: #EBF7F0; border: 1px solid #BCE2CA; color: #137044; }
+        .composition-total.invalid { background: #FFF4ED; border: 1px solid #F4CFB8; color: #B64E12; }
+        .composition-total.unknown { background: #F2F5FA; border: 1px solid #D9E0EB; color: #5C6678; }
+        .submit-note { color: var(--muted); font-size: .78rem; line-height: 1.6; margin: 4px 2px 12px; text-align: center; }
+        .layer-visual {
+            background: linear-gradient(145deg, #F8FAFF 0%, #FFFFFF 56%, #F2F5FB 100%);
+            border: 1px solid #DDE3F0;
+            border-radius: 20px;
+            display: grid;
+            gap: 22px;
+            grid-template-columns: minmax(180px, .72fr) minmax(360px, 1.5fr);
+            margin-top: 16px;
+            overflow: hidden;
+            padding: 22px;
+        }
+        .layer-visual__copy { align-self: center; }
+        .layer-visual__copy span { color: var(--blue); font-size: .7rem; font-weight: 900; letter-spacing: .13em; }
+        .layer-visual__copy strong { color: var(--ink); display: block; font-size: 1.12rem; margin: 6px 0; }
+        .layer-visual__copy p { color: var(--muted); font-size: .8rem; line-height: 1.55; margin: 0; }
+        .layer-stack { display: grid; gap: 7px; }
+        .layer-stack__item {
+            align-items: center;
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 28px minmax(100px, .8fr) minmax(140px, 1.2fr);
+        }
+        .layer-stack__number {
+            align-items: center; background: #18275B; border-radius: 50%; color: #FFFFFF;
+            display: inline-flex; font-size: .68rem; font-weight: 900; height: 26px; justify-content: center; width: 26px;
+        }
+        .layer-stack__slab {
+            border: 1px solid rgba(38, 59, 126, .22); border-radius: 7px; box-shadow: 0 7px 12px rgba(28, 42, 92, .12);
+            height: 30px; transform: skewX(-10deg);
+        }
+        .layer-stack__item:nth-child(1) .layer-stack__slab { background: linear-gradient(135deg, #284794, #7F9FE0); }
+        .layer-stack__item:nth-child(2) .layer-stack__slab { background: linear-gradient(135deg, #9E8A6C, #D8C9B3); }
+        .layer-stack__item:nth-child(3) .layer-stack__slab { background: linear-gradient(135deg, #7485A9, #C0CBE0); }
+        .layer-stack__item:nth-child(4) .layer-stack__slab { background: linear-gradient(135deg, #4774AA, #A7C6E7); }
+        .layer-stack__item:nth-child(5) .layer-stack__slab { background: linear-gradient(135deg, #2E394A, #6E7D90); }
+        .layer-stack__item.inactive { opacity: .38; }
+        .layer-stack__meta { min-width: 0; }
+        .layer-stack__meta strong { color: #26314B; display: block; font-size: .78rem; }
+        .layer-stack__meta span { color: var(--muted); display: block; font-size: .74rem; overflow-wrap: anywhere; }
+        .trace-guide {
+            background: #F5F7FC; border-left: 3px solid var(--blue); border-radius: 0 12px 12px 0;
+            color: #4D5873; font-size: .8rem; line-height: 1.6; margin: 16px 0 12px; padding: 11px 14px;
+        }
+        .trace-card {
+            background: #FFFFFF; border: 1px solid var(--line); border-radius: 15px; margin-bottom: 9px; padding: 13px 14px;
+        }
+        .trace-card__header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 9px; }
+        .trace-card__header strong { color: var(--ink); }
+        .trace-card__grid { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .trace-card__grid span { color: var(--muted); display: block; font-size: .68rem; font-weight: 800; margin-bottom: 3px; }
+        .trace-card__grid div { color: #26314B; font-size: .8rem; overflow-wrap: anywhere; }
+        .status-badge { border-radius: 999px; display: inline-block; font-size: .75rem; font-weight: 800; padding: .28rem .65rem; }
+        .regulation-timeline {
+            display: grid; gap: 9px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px 0 18px;
+        }
+        .timeline-cell { background: #FFFFFF; border: 1px solid var(--line); border-radius: 13px; min-height: 82px; padding: 11px 12px; }
+        .timeline-cell span { color: var(--muted); display: block; font-size: .68rem; font-weight: 800; margin-bottom: 5px; }
+        .timeline-cell strong { color: #26314B; display: block; font-size: .78rem; line-height: 1.45; overflow-wrap: anywhere; }
+        .snapshot-banner {
+            align-items: center; background: linear-gradient(120deg, #101D5C, #1428A0 62%, #315CE7);
+            border-radius: 18px; color: #FFFFFF; display: flex; justify-content: space-between;
+            margin: 8px 0 16px; padding: 18px 20px;
+        }
+        .snapshot-banner span { display: block; font-size: .67rem; font-weight: 900; letter-spacing: .12em; opacity: .72; }
+        .snapshot-banner strong { display: block; font-size: 1.12rem; margin-top: 4px; }
+        .snapshot-banner__meta { font-size: .74rem; line-height: 1.6; opacity: .82; text-align: right; }
         .flow-card {
             min-height: 168px;
             background: white;
@@ -159,7 +286,7 @@ def setup_page(title: str) -> None:
         .stat-value { color: var(--ink); font-size: 1.85rem; font-weight: 900; margin-top: .25rem; letter-spacing: -.04em; }
         .risk-badge { display: inline-block; border-radius: 999px; padding: .28rem .72rem; font-size: .8rem; font-weight: 800; }
         .reg-row {
-            display: grid; grid-template-columns: minmax(240px, 1fr) 120px 120px;
+            display: grid; grid-template-columns: minmax(240px, 1fr) 110px 110px 110px;
             gap: 1rem; align-items: center; background: white; border: 1px solid var(--line);
             border-radius: 18px; padding: 1rem 1.1rem; margin-bottom: .65rem;
             box-shadow: 0 7px 22px rgba(17, 28, 66, .035);
@@ -223,6 +350,11 @@ def setup_page(title: str) -> None:
             .hero h1 { font-size: 2.2rem !important; }
             .reg-row { grid-template-columns: 1fr; gap: .55rem; }
             .action-step { grid-template-columns: 36px 1fr; }
+            .layer-visual { grid-template-columns: 1fr; padding: 17px; }
+            .layer-stack__item { grid-template-columns: 26px 90px minmax(0, 1fr); }
+            .trace-card__grid, .regulation-timeline { grid-template-columns: 1fr 1fr; }
+            .snapshot-banner { align-items: flex-start; flex-direction: column; gap: 10px; }
+            .snapshot-banner__meta { text-align: left; }
         }
         </style>
         """,
@@ -249,9 +381,9 @@ def render_sidebar() -> None:
         st.page_link("app.py", label="Home")
         st.page_link("pages/1_Product_Input.py", label="제품 규제 진단")
         st.page_link("pages/2_Diagnosis_Result.py", label="진단 결과")
-        st.page_link("pages/3_Risk_Dashboard.py", label="Risk Dashboard")
+        st.page_link("pages/3_Risk_Dashboard.py", label="제품 데이터베이스")
         st.markdown("---")
-        st.caption("Prototype 2.1 · Five markets")
+        st.caption("Prototype 2.4 · Five markets")
 
 
 def page_heading(kicker: str, title: str, description: str) -> None:
@@ -267,6 +399,61 @@ def risk_badge(level: str) -> str:
     return (
         f'<span class="risk-badge" style="color:{foreground};background:{background};">'
         f"{escape(level)}</span>"
+    )
+
+
+def regulation_status_badge(status: str) -> str:
+    """규제의 현재 단계를 시행 중·시행 예정·제안 검토 배지로 표시한다."""
+    foreground, background = REGULATION_STATUS_COLORS.get(status, ("#475467", "#F2F4F7"))
+    return (
+        f'<span class="status-badge" style="color:{foreground};background:{background};">'
+        f"{escape(status or '상태 확인 필요')}</span>"
+    )
+
+
+def render_layer_stack(
+    base_fabric: object,
+    membrane: object,
+    coating: object,
+    lamination: object,
+    finishing: object,
+    *,
+    title: str = "Layered Structure",
+) -> None:
+    """제품의 기능성 구조를 다섯 개 층으로 시각화한다."""
+    layers = [
+        (5, "Finishing", finishing),
+        (4, "Lamination", lamination),
+        (3, "Coating", coating),
+        (2, "Membrane", membrane),
+        (1, "Base fabric", base_fabric),
+    ]
+    inactive_values = {"", "없음", "미입력", "선택 안 함"}
+    layer_html = "".join(
+        f"""
+        <div class="layer-stack__item {'inactive' if str(value or '').strip() in inactive_values else ''}">
+            <span class="layer-stack__number">{number}</span>
+            <div class="layer-stack__slab"></div>
+            <div class="layer-stack__meta">
+                <strong>{escape(label)}</strong>
+                <span>{escape(str(value or '없음'))}</span>
+            </div>
+        </div>
+        """
+        for number, label, value in layers
+    )
+    st.markdown(
+        f"""
+        <div class="layer-visual">
+            <div class="layer-visual__copy">
+                <span>STRUCTURE MAP</span>
+                <strong>{escape(title)}</strong>
+                <p>제품을 구성하는 원단과 기능성 층을 위에서 아래 순서로 보여줍니다.</p>
+            </div>
+            <div class="layer-stack">{layer_html}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 

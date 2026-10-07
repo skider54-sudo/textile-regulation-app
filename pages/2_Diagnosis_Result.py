@@ -1,12 +1,20 @@
 """규제 진단 결과와 상세 대응방안 화면."""
 
 from html import escape
+import json
 import re
 
 import streamlit as st
 
 from utils.data_loader import load_regulations
-from utils.ui import page_heading, render_footer, risk_badge, setup_page
+from utils.ui import (
+    page_heading,
+    regulation_status_badge,
+    render_footer,
+    render_layer_stack,
+    risk_badge,
+    setup_page,
+)
 
 
 REGULATION_NAME_ALIASES = {
@@ -40,6 +48,17 @@ def _render_detail_list(value: object, empty_text: str = "추가 확인 필요")
         st.markdown(f"- {escape(item)}")
 
 
+def _process_detail_rows(value: object) -> list[dict]:
+    """제품 입력 화면에서 저장한 공정별 추적정보를 안전하게 복원한다."""
+    try:
+        rows = json.loads(str(value or "[]"))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return []
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if isinstance(row, dict)]
+
+
 setup_page("진단 결과")
 page_heading(
     "ASSESSMENT RESULT",
@@ -55,6 +74,12 @@ if not result:
         st.switch_page("pages/1_Product_Input.py")
     render_footer()
     st.stop()
+
+if st.session_state.get("history_save_error"):
+    st.warning(
+        "진단 결과는 정상 생성됐지만 제품 데이터베이스에 기록하지 못했습니다. "
+        "저장 위치 권한을 확인한 뒤 다시 진단해 주세요."
+    )
 
 product = result["제품"]
 score = int(result["score"])
@@ -78,10 +103,52 @@ for match in result["규제"]:
     matches.append({**match, **latest})
 
 st.markdown(f"### {escape(product['제품명'])}")
-st.caption(
-    f"{product.get('소재', '-')} · {product.get('가공방법', '-') or '가공정보 없음'} · "
+profile_summary = [
+    product.get("제품형태"),
+    product.get("제품용도"),
+    product.get("피부접촉"),
     f"판매·수출국 {product.get('수출국', '-')}"
-)
+]
+st.caption(" · ".join(str(value) for value in profile_summary if value))
+
+if product.get("Base fabric"):
+    with st.expander("입력한 제품 구조 확인", expanded=False):
+        render_layer_stack(
+            product.get("Base fabric", "-"),
+            product.get("Membrane", "-"),
+            product.get("Coating", "-"),
+            product.get("Lamination", "-"),
+            product.get("Finishing", "-"),
+            title="진단 대상 제품 구조",
+        )
+
+process_details = _process_detail_rows(product.get("공정상세"))
+if process_details:
+    with st.expander("공정·화학물질 추적 정보", expanded=False):
+        for detail in process_details:
+            trace_cells = [
+                ("상품명·가공제", detail.get("상품명") or "미입력"),
+                ("화학물질명", detail.get("화학물질명") or "미확인"),
+                ("CAS No.", detail.get("CAS No.") or "미확인"),
+                ("SDS/TDS", detail.get("SDS/TDS") or "미확인"),
+            ]
+            trace_html = "".join(
+                f"<div><span>{escape(label)}</span>{escape(str(value))}</div>"
+                for label, value in trace_cells
+            )
+            pfas_value = str(detail.get("PFAS 여부") or "미확인")
+            st.markdown(
+                f"""
+                <div class="trace-card">
+                    <div class="trace-card__header">
+                        <strong>{escape(str(detail.get('공정') or '공정 미입력'))}</strong>
+                        <span class="status-badge" style="color:#3538CD;background:#EEF4FF;">{escape(pfas_value)}</span>
+                    </div>
+                    <div class="trace-card__grid">{trace_html}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 score_col, risk_col, count_col = st.columns([1.2, 1, 1])
 with score_col:
@@ -137,6 +204,10 @@ else:
                     <span class="reg-label">위험도</span>
                     {risk_badge(str(match['위험도']))}
                 </div>
+                <div>
+                    <span class="reg-label">규제 상태</span>
+                    {regulation_status_badge(str(match.get('규제상태', '')))}
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -160,6 +231,20 @@ if matches:
         """,
         unsafe_allow_html=True,
     )
+
+    timeline_items = [
+        ("규제 상태", regulation_status_badge(str(selected.get("규제상태", "")))),
+        ("발표일", escape(str(selected.get("발표일") or "미확인"))),
+        ("확정일", escape(str(selected.get("확정일") or "미확인"))),
+        ("주요 시행일", escape(str(selected.get("주요시행일") or selected.get("시행일") or "미확인"))),
+        ("유예·전환기간", escape(str(selected.get("유예기간") or "해당 없음"))),
+        ("최근 확인일", escape(str(selected.get("최근확인일") or "미확인"))),
+    ]
+    timeline_html = "".join(
+        f'<div class="timeline-cell"><span>{escape(label)}</span><strong>{value}</strong></div>'
+        for label, value in timeline_items
+    )
+    st.markdown(f'<div class="regulation-timeline">{timeline_html}</div>', unsafe_allow_html=True)
 
     product_triggers = [
         reason
@@ -242,8 +327,9 @@ if matches:
     source_url = str(selected.get("공식출처", "")).strip()
     if source_url.startswith(("https://", "http://")):
         st.link_button("공식 규제 원문 확인", source_url, width="stretch")
+    reviewed_date = str(selected.get("최근확인일") or "미확인")
     st.caption(
-        "규제 데이터 검토 기준일: 2026-10-01 · 실제 출시 전에는 공식 원문 최신본과 적용 예외를 다시 확인하세요."
+        f"규제 데이터 최근 확인일: {reviewed_date} · 실제 출시 전에는 공식 원문 최신본과 적용 예외를 다시 확인하세요."
     )
 
     with st.expander("매칭 근거와 점수 산정 방식"):
@@ -260,7 +346,7 @@ with action_col1:
     if st.button("다른 제품 진단", width="stretch"):
         st.switch_page("pages/1_Product_Input.py")
 with action_col2:
-    if st.button("Dashboard 보기", type="primary", width="stretch"):
+    if st.button("제품 데이터베이스 보기", type="primary", width="stretch"):
         st.switch_page("pages/3_Risk_Dashboard.py")
 
 render_footer()
