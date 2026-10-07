@@ -36,7 +36,16 @@ class ProductInputTest(unittest.TestCase):
 
         self.assertEqual(len(app.exception), 0)
         destination_options = _by_label(app.multiselect, "판매·수출국 *").options
-        for destination in ["중국", "캐나다", "호주", "대한민국"]:
+        for destination in [
+            "중국",
+            "베트남",
+            "인도",
+            "대만",
+            "캐나다",
+            "호주",
+            "뉴질랜드",
+            "대한민국",
+        ]:
             self.assertIn(destination, destination_options)
 
         product_use_options = _by_label(app.selectbox, "제품 용도 *").options
@@ -49,6 +58,7 @@ class ProductInputTest(unittest.TestCase):
         app.run(timeout=30)
 
         self.assertFalse(_by_label(app.text_input, "구성 3 기타 소재명").disabled)
+        self.assertFalse(_by_label(app.selectbox, "기타 소재 유형").disabled)
         _by_label(app.text_input, "구성 3 기타 소재명").input("Modal")
         _by_label(app.number_input, "구성 1 함량 (%)").set_value(80.0)
         _by_label(app.number_input, "구성 2 함량 (%)").set_value(17.0)
@@ -67,6 +77,7 @@ class ProductInputTest(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
         product = app.session_state["current_result"]["제품"]
         self.assertEqual(product["소재"], "Nylon 80%, Spandex 17%, Modal 3%")
+        self.assertEqual(product["소재분류"], "섬유")
         self.assertEqual(product["제품형태"], "의류 완제품")
         self.assertEqual(product["피부접촉"], "직접·장시간 접촉")
         process_details = json.loads(product["공정상세"])

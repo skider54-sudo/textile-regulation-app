@@ -383,7 +383,7 @@ def render_sidebar() -> None:
         st.page_link("pages/2_Diagnosis_Result.py", label="진단 결과")
         st.page_link("pages/3_Risk_Dashboard.py", label="제품 데이터베이스")
         st.markdown("---")
-        st.caption("Prototype 2.4 · Five markets")
+        st.caption("Prototype 2.5 · 12 markets")
 
 
 def page_heading(kicker: str, title: str, description: str) -> None:

@@ -14,8 +14,12 @@ COUNTRY_ALIASES = {
     "영국": {"영국", "uk", "unitedkingdom", "greatbritain", "britain"},
     "일본": {"일본", "jp", "japan"},
     "중국": {"중국", "cn", "china", "prc", "peoplesrepublicofchina"},
+    "베트남": {"베트남", "vn", "vietnam", "socialistrepublicofvietnam"},
+    "인도": {"인도", "in", "india", "republicofindia"},
+    "대만": {"대만", "tw", "taiwan", "roc", "republicofchina"},
     "캐나다": {"캐나다", "ca", "canada"},
     "호주": {"호주", "au", "australia", "commonwealthofaustralia"},
+    "뉴질랜드": {"뉴질랜드", "nz", "newzealand", "aotearoa"},
     "대한민국": {"대한민국", "한국", "kr", "korea", "southkorea", "republicofkorea"},
 }
 
@@ -53,6 +57,41 @@ def _contains_keyword(value: Any, keywords: Any) -> list[str]:
     return [term for term in terms if _normalized(term) in haystack]
 
 
+def _is_explicitly_non_textile_material(value: Any) -> bool:
+    """가죽·금속처럼 입력값 전체가 명백한 비섬유 소재인지 확인한다."""
+    non_textile_names = {
+        "leather",
+        "syntheticleather",
+        "puleather",
+        "가죽",
+        "인조가죽",
+        "metal",
+        "stainlesssteel",
+        "steel",
+        "aluminum",
+        "금속",
+        "스테인리스",
+        "알루미늄",
+        "rubber",
+        "고무",
+        "plastic",
+        "플라스틱",
+        "wood",
+        "목재",
+        "ceramic",
+        "세라믹",
+        "glass",
+        "유리",
+    }
+    parts = _terms(value)
+    if not parts:
+        return False
+    material_names = [
+        re.sub(r"\d+(?:\.\d+)?%?", "", _normalized(part)) for part in parts
+    ]
+    return bool(material_names) and all(name in non_textile_names for name in material_names)
+
+
 def _destinations(value: Any) -> set[str]:
     """사용자 수출국 표기를 규제 DB의 표준 국가명으로 변환한다."""
     normalized_parts = {
@@ -87,7 +126,11 @@ def relevance_level(factor_count: int, rule_type: str) -> str:
     """실제 매칭된 조건 수와 규칙 유형으로 관련성을 계산한다."""
     if factor_count >= 3 or (rule_type == "pfas" and factor_count >= 2):
         return "높음"
-    if factor_count >= 2 or rule_type in {"country_baseline", "country_adult_textile"}:
+    if factor_count >= 2 or rule_type in {
+        "country_baseline",
+        "country_adult_textile",
+        "textile_required",
+    }:
         return "중간"
     return "낮음"
 
@@ -112,6 +155,36 @@ def match_regulation(product: dict[str, Any], regulation: dict[str, Any]) -> dic
         usage_context, "유아|영아|아동|어린이"
     ):
         return None
+    # 기타 입력 소재는 열린 목록이므로, 제품 용도 범위를 먼저 보고 입력값 전체가
+    # 명백한 비섬유 소재일 때만 제외한다.
+    if rule_type == "textile_required":
+        material_value = _text(product.get("소재"))
+        material_classification = _normalized(product.get("소재분류"))
+        explicitly_non_textile = material_classification in {
+            "비섬유",
+            "nontextile",
+            "nontextilematerial",
+        }
+        # 신규 입력은 사용자가 지정한 소재 분류를 우선 사용한다. 이전 진단 기록처럼
+        # 분류 필드가 없는 데이터만 제한적으로 소재명 기반 호환 판정을 수행한다.
+        if explicitly_non_textile:
+            return None
+        if (
+            not material_classification
+            and _is_explicitly_non_textile_material(material_value)
+            and not material_hits
+        ):
+            return None
+        # 같은 섬유 소재라도 신발·가방처럼 해당 법령의 열거 제품범위 밖이면 제외한다.
+        if _terms(regulation.get("용도키워드")) and not usage_hits:
+            return None
+    # 완제품 규제가 원사·원단·부자재의 최종 용도 문자열에 잘못 걸리지 않게 한다.
+    if rule_type == "finished_use_required":
+        product_form = _text(product.get("제품형태"))
+        if product_form and _contains_keyword(product_form, "원사|원단|부자재|산업용 섬유"):
+            return None
+        if not usage_hits:
+            return None
     if rule_type == "pfas" and not (chemical_hits or process_hits):
         return None
     if rule_type == "keyword" and not chemical_hits:

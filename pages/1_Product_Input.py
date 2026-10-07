@@ -36,8 +36,12 @@ DESTINATION_OPTIONS = [
     "영국",
     "일본",
     "중국",
+    "베트남",
+    "인도",
+    "대만",
     "캐나다",
     "호주",
+    "뉴질랜드",
     "대한민국",
 ]
 
@@ -240,6 +244,20 @@ with st.container(border=True):
                 key=f"custom_material_{index}",
             )
         composition_inputs.append((material_choice, ratio, custom_material))
+
+    has_custom_material = any(
+        material_choice == "기타" for material_choice, _, _ in composition_inputs
+    )
+    custom_material_type = st.selectbox(
+        "기타 소재 유형",
+        ["섬유", "비섬유", "미확인"],
+        help=(
+            "기타 소재가 섬유인지 명시하면 규제 범위를 더 정확히 판정할 수 있습니다. "
+            "여러 기타 소재를 입력했다면 섬유가 하나라도 포함된 경우 ‘섬유’를 선택하세요."
+        ),
+        disabled=not has_custom_material,
+        key="custom_material_type",
+    )
 
     total_ratio = sum(
         ratio
@@ -564,6 +582,17 @@ if submit:
         else:
             material_summary = ", ".join(f"{name} {ratio:g}%" for name, ratio in selected_components)
 
+        known_textile_selected = any(
+            material_choice not in {"선택 안 함", "기타", "미확인"}
+            for material_choice, _, _ in composition_inputs
+        )
+        if known_textile_selected or (has_custom_material and custom_material_type == "섬유"):
+            material_classification = "섬유"
+        elif has_custom_material and custom_material_type == "비섬유":
+            material_classification = "비섬유"
+        else:
+            material_classification = "미확인"
+
         extra_processes = []
         for value in [*coating_values, *lamination_values, *finishings]:
             if value not in {"미확인", "기타"}:
@@ -607,6 +636,7 @@ if submit:
             "수출국": ", ".join(destinations),
             "제품형태": product_form,
             "피부접촉": skin_contact,
+            "소재분류": material_classification,
             "혼용률상태": "미확인" if composition_unknown else "확인",
             "Base fabric": material_summary,
             "Membrane": resolved_structure["Membrane"],

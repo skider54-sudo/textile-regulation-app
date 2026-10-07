@@ -59,12 +59,21 @@ OFFICIAL_DOMAIN_SUFFIXES = {
     "openstd.samr.gov.cn",
     "std.samr.gov.cn",
     "samr.gov.cn",
+    "moit.gov.vn",
+    "chinhphu.vn",
+    "consumeraffairs.gov.in",
+    "dgft.gov.in",
+    "bis.gov.in",
+    "moea.gov.tw",
+    "bsmi.gov.tw",
     "competition-bureau.canada.ca",
     "canada.ca",
     "laws-lois.justice.gc.ca",
     "productsafety.gov.au",
     "legislation.gov.au",
     "dcceew.gov.au",
+    "legislation.govt.nz",
+    "comcom.govt.nz",
     "law.go.kr",
     "open.law.go.kr",
 }
@@ -303,7 +312,7 @@ def fetch_official_source(
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 "
-            "TexReg-Insight/2.4"
+            "TexReg-Insight/2.5"
         ),
         "Accept": accept_header,
         "Accept-Language": "en-US,en;q=0.9,ko;q=0.8",

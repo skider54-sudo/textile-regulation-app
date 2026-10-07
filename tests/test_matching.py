@@ -198,6 +198,279 @@ class MatchingEngineTest(unittest.TestCase):
         self.assertIn("Australia IChEMS Schedule 7 PFAS", pfas_names)
         self.assertNotIn("Australia Children's Nightwear Safety Standard 2017", pfas_names)
 
+    def test_vietnam_alias_matches_labelling_and_qcvn(self) -> None:
+        product = {
+            "제품명": "Vietnam Cotton Shirt",
+            "제품형태": "의류 완제품",
+            "소재": "Cotton",
+            "가공방법": "직조, 염색",
+            "사용화학물질": "반응성염료",
+            "제품용도": "일상 의류",
+            "수출국": "VN",
+        }
+        result = diagnose_product(product, self.regulations)
+        regulation_names = {item["규제명"] for item in result["규제"]}
+        self.assertIn("Vietnam Goods Labelling Decree 37/2026/ND-CP", regulation_names)
+        self.assertIn("Vietnam QCVN 01:2017/BCT + Amendment 01:2026", regulation_names)
+
+    def test_india_azo_apparel_matches_labelling_and_dye_policy(self) -> None:
+        product = {
+            "제품명": "India Azo Print Sports Tee",
+            "제품형태": "의류 완제품",
+            "소재": "Polyester",
+            "가공방법": "편직, 염색, 프린팅",
+            "사용화학물질": "아조염료",
+            "제품용도": "스포츠 의류",
+            "수출국": "India",
+        }
+        result = diagnose_product(product, self.regulations)
+        regulation_names = {item["규제명"] for item in result["규제"]}
+        self.assertIn("India Legal Metrology Garment & Hosiery Labelling", regulation_names)
+        self.assertIn("India DGFT Hazardous Dyes Import Policy", regulation_names)
+
+    def test_taiwan_infant_apparel_matches_labelling_and_inspection(self) -> None:
+        product = {
+            "제품명": "Taiwan Baby Bodysuit",
+            "제품형태": "의류 완제품",
+            "소재": "Organic Cotton",
+            "가공방법": "편직, 염색",
+            "사용화학물질": "포름알데히드 미확인",
+            "제품용도": "유아용 의류",
+            "수출국": "TW",
+        }
+        result = diagnose_product(product, self.regulations)
+        regulation_names = {item["규제명"] for item in result["규제"]}
+        self.assertIn("Taiwan Apparel & Garment Labelling Criteria", regulation_names)
+        self.assertIn("Taiwan Mandatory Textile Inspection CNS 15290/15291", regulation_names)
+
+    def test_new_zealand_child_sleepwear_rule_is_conditional(self) -> None:
+        child_product = {
+            "제품명": "New Zealand Kids Pyjamas",
+            "제품형태": "의류 완제품",
+            "소재": "Cotton",
+            "가공방법": "편직, 염색, 기모",
+            "사용화학물질": "반응성염료",
+            "제품용도": "아동용 잠옷",
+            "수출국": "NZ",
+        }
+        child_result = diagnose_product(child_product, self.regulations)
+        child_names = {item["규제명"] for item in child_result["규제"]}
+        self.assertIn("NZ Textile Consumer Information Standards", child_names)
+        self.assertIn("NZ Children's Nightwear Product Safety Standard", child_names)
+
+        adult_product = dict(child_product)
+        adult_product.update({"제품명": "New Zealand Adult Shirt", "제품용도": "일상 의류"})
+        adult_result = diagnose_product(adult_product, self.regulations)
+        adult_names = {item["규제명"] for item in adult_result["규제"]}
+        self.assertIn("NZ Textile Consumer Information Standards", adult_names)
+        self.assertNotIn("NZ Children's Nightwear Product Safety Standard", adult_names)
+
+    def test_new_market_scope_excludes_non_textiles_and_components(self) -> None:
+        vietnam_shoe = {
+            "제품명": "Vietnam Leather Shoe",
+            "제품형태": "신발",
+            "소재": "Leather",
+            "소재분류": "비섬유",
+            "가공방법": "봉제",
+            "사용화학물질": "없음",
+            "제품용도": "일반 신발",
+            "수출국": "베트남",
+        }
+        vietnam_names = {
+            item["규제명"] for item in diagnose_product(vietnam_shoe, self.regulations)["규제"]
+        }
+        self.assertIn("Vietnam Goods Labelling Decree 37/2026/ND-CP", vietnam_names)
+        self.assertNotIn("Vietnam QCVN 01:2017/BCT + Amendment 01:2026", vietnam_names)
+
+        vietnam_poly_shoe = dict(vietnam_shoe)
+        vietnam_poly_shoe.update(
+            {
+                "제품명": "Vietnam Polyester Shoe",
+                "소재": "Polyester",
+                "소재분류": "섬유",
+            }
+        )
+        vietnam_poly_names = {
+            item["규제명"]
+            for item in diagnose_product(vietnam_poly_shoe, self.regulations)["규제"]
+        }
+        self.assertNotIn(
+            "Vietnam QCVN 01:2017/BCT + Amendment 01:2026", vietnam_poly_names
+        )
+
+        vietnam_modal_shirt = dict(vietnam_shoe)
+        vietnam_modal_shirt.update(
+            {
+                "제품명": "Vietnam Modal Shirt",
+                "제품형태": "의류 완제품",
+                "소재": "Modal",
+                "소재분류": "섬유",
+                "제품용도": "일상 의류",
+            }
+        )
+        vietnam_modal_names = {
+            item["규제명"]
+            for item in diagnose_product(vietnam_modal_shirt, self.regulations)["규제"]
+        }
+        self.assertIn(
+            "Vietnam QCVN 01:2017/BCT + Amendment 01:2026", vietnam_modal_names
+        )
+
+        # 기타 입력으로 등록한 섬유도 고정 소재 목록에 없다는 이유로 누락하지 않는다.
+        for custom_material in ("Silk 100%", "Hemp 100%"):
+            vietnam_custom_textile = dict(vietnam_modal_shirt)
+            vietnam_custom_textile.update(
+                {
+                    "제품명": f"Vietnam {custom_material} Shirt",
+                    "소재": custom_material,
+                }
+            )
+            vietnam_custom_names = {
+                item["규제명"]
+                for item in diagnose_product(vietnam_custom_textile, self.regulations)["규제"]
+            }
+            self.assertIn(
+                "Vietnam QCVN 01:2017/BCT + Amendment 01:2026",
+                vietnam_custom_names,
+            )
+
+        india_trim = {
+            "제품명": "India Metal Trim",
+            "제품형태": "부자재",
+            "소재": "Metal",
+            "소재분류": "비섬유",
+            "가공방법": "도금",
+            "사용화학물질": "없음",
+            "제품용도": "의류 부자재",
+            "수출국": "인도",
+        }
+        india_names = {
+            item["규제명"] for item in diagnose_product(india_trim, self.regulations)["규제"]
+        }
+        self.assertNotIn("India Legal Metrology Garment & Hosiery Labelling", india_names)
+        self.assertNotIn("India DGFT Hazardous Dyes Import Policy", india_names)
+
+        for custom_non_textile in (
+            "Brass 100%",
+            "구리 100%",
+            "Silicone 100%",
+            "Polyester resin 100%",
+        ):
+            india_custom_non_textile = dict(india_trim)
+            india_custom_non_textile.update(
+                {"제품명": f"India {custom_non_textile} Component", "소재": custom_non_textile}
+            )
+            india_custom_names = {
+                item["규제명"]
+                for item in diagnose_product(india_custom_non_textile, self.regulations)["규제"]
+            }
+            self.assertNotIn("India DGFT Hazardous Dyes Import Policy", india_custom_names)
+
+        india_fabric = dict(india_trim)
+        india_fabric.update(
+            {
+                "제품명": "India Apparel Fabric",
+                "제품형태": "원단",
+                "소재": "Cotton",
+                "소재분류": "섬유",
+                "가공방법": "직조, 염색",
+                "제품용도": "일상 의류",
+            }
+        )
+        india_fabric_names = {
+            item["규제명"] for item in diagnose_product(india_fabric, self.regulations)["규제"]
+        }
+        self.assertNotIn(
+            "India Legal Metrology Garment & Hosiery Labelling", india_fabric_names
+        )
+        self.assertIn("India DGFT Hazardous Dyes Import Policy", india_fabric_names)
+
+        india_lyocell_shirt = dict(india_fabric)
+        india_lyocell_shirt.update(
+            {
+                "제품명": "India Lyocell Shirt",
+                "제품형태": "의류 완제품",
+                "소재": "Tencel / Lyocell",
+            }
+        )
+        india_lyocell_names = {
+            item["규제명"]
+            for item in diagnose_product(india_lyocell_shirt, self.regulations)["규제"]
+        }
+        self.assertIn("India DGFT Hazardous Dyes Import Policy", india_lyocell_names)
+
+        india_aramid_fabric = dict(india_fabric)
+        india_aramid_fabric.update(
+            {"제품명": "India Aramid Fabric", "소재": "Aramid 100%"}
+        )
+        india_aramid_names = {
+            item["규제명"]
+            for item in diagnose_product(india_aramid_fabric, self.regulations)["규제"]
+        }
+        self.assertIn("India DGFT Hazardous Dyes Import Policy", india_aramid_names)
+
+        india_poly_bag = dict(india_fabric)
+        india_poly_bag.update(
+            {
+                "제품명": "India Polyester Bag",
+                "제품형태": "가방·액세서리",
+                "소재": "Polyester",
+                "제품용도": "가방",
+            }
+        )
+        india_bag_names = {
+            item["규제명"]
+            for item in diagnose_product(india_poly_bag, self.regulations)["규제"]
+        }
+        self.assertNotIn("India DGFT Hazardous Dyes Import Policy", india_bag_names)
+
+        taiwan_fabric = {
+            "제품명": "Taiwan Apparel Fabric",
+            "제품형태": "원단",
+            "소재": "Cotton",
+            "가공방법": "직조, 염색",
+            "사용화학물질": "반응성염료",
+            "제품용도": "일상 의류",
+            "수출국": "대만",
+        }
+        taiwan_names = {
+            item["규제명"] for item in diagnose_product(taiwan_fabric, self.regulations)["규제"]
+        }
+        self.assertNotIn("Taiwan Apparel & Garment Labelling Criteria", taiwan_names)
+        self.assertIn("Taiwan Textile Labelling Criteria", taiwan_names)
+        self.assertNotIn("Taiwan Mandatory Textile Inspection CNS 15290/15291", taiwan_names)
+
+        taiwan_child_shoe = dict(taiwan_fabric)
+        taiwan_child_shoe.update(
+            {
+                "제품명": "Taiwan Child Shoe",
+                "제품형태": "신발",
+                "소재": "Polyester",
+                "제품용도": "아동용 신발",
+            }
+        )
+        taiwan_shoe_names = {
+            item["규제명"]
+            for item in diagnose_product(taiwan_child_shoe, self.regulations)["규제"]
+        }
+        self.assertNotIn("Taiwan Mandatory Textile Inspection CNS 15290/15291", taiwan_shoe_names)
+
+        nz_raw_sleepwear = {
+            "제품명": "NZ Sleepwear Fabric",
+            "제품형태": "원단",
+            "소재": "Cotton",
+            "가공방법": "직조, 염색",
+            "사용화학물질": "반응성염료",
+            "제품용도": "아동용 잠옷",
+            "수출국": "뉴질랜드",
+        }
+        nz_raw_names = {
+            item["규제명"]
+            for item in diagnose_product(nz_raw_sleepwear, self.regulations)["규제"]
+        }
+        self.assertIn("NZ Textile Consumer Information Standards", nz_raw_names)
+        self.assertNotIn("NZ Children's Nightwear Product Safety Standard", nz_raw_names)
+
     def test_child_rules_require_child_product_use(self) -> None:
         product = {
             "제품명": "Adult Printed Jacket",

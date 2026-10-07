@@ -18,7 +18,7 @@ import pandas as pd
 BASE_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_HISTORY_DB = BASE_DIR / "data" / "diagnosis_history.db"
 SNAPSHOT_SCHEMA_VERSION = 1
-APP_RULESET_VERSION = "2.3"
+APP_RULESET_VERSION = "2.5"
 HISTORY_LIST_COLUMNS = [
     "record_id",
     "diagnosed_at",
