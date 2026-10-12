@@ -4,6 +4,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from streamlit.testing.v1 import AppTest
 
@@ -65,6 +66,14 @@ class ProductDatabaseTest(unittest.TestCase):
         os.environ.pop("TEXREG_LIVE_CHECKS", None)
         self._temp_dir.cleanup()
 
+    @staticmethod
+    def _visible_text(app: AppTest) -> str:
+        values: list[str] = []
+        for collection_name in ("markdown", "caption", "warning", "error", "info", "code"):
+            for element in getattr(app, collection_name, []):
+                values.append(str(getattr(element, "value", "")))
+        return "\n".join(values)
+
     def test_saved_record_and_historical_regulations_are_visible(self) -> None:
         app = AppTest.from_file(str(ROOT / "app.py")).run(timeout=30)
         app.switch_page("pages/3_Risk_Dashboard.py").run(timeout=30)
@@ -75,10 +84,30 @@ class ProductDatabaseTest(unittest.TestCase):
         self.assertTrue(any("진단 당시 문제 규제" in value for value in markdown_values))
         self.assertTrue(any("현재 규제 DB와 비교" in value for value in markdown_values))
         self.assertTrue(any("공식 출처 최신성 확인" in value for value in markdown_values))
+        self.assertTrue(any('class="archive-steps"' in value for value in markdown_values))
+        self.assertTrue(any('class="archive-notice"' in value for value in markdown_values))
+        self.assertTrue(any('class="archive-guide"' in value for value in markdown_values))
         self.assertTrue(any("공식 페이지 본문 변경" in warning.value for warning in app.warning))
         self.assertTrue(
             any(button.label == "현재 규제 DB로 재진단하고 새 기록 만들기" for button in app.button)
         )
+        visible_text = self._visible_text(app)
+        self.assertNotIn("/mount/", visible_text)
+        self.assertNotIn("diagnosis_history.db", visible_text)
+
+    def test_storage_error_hides_server_filesystem_path(self) -> None:
+        app = AppTest.from_file(str(ROOT / "app.py")).run(timeout=30)
+        with patch(
+            "texreg_core.history.list_diagnosis_history",
+            side_effect=OSError("/mount/src/textile-regulation-app/data/diagnosis_history.db"),
+        ):
+            app.switch_page("pages/3_Risk_Dashboard.py").run(timeout=30)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertTrue(any("제품 데이터베이스를 열지 못했습니다" in item.value for item in app.error))
+        visible_text = self._visible_text(app)
+        self.assertNotIn("/mount/", visible_text)
+        self.assertNotIn("diagnosis_history.db", visible_text)
 
 
 if __name__ == "__main__":

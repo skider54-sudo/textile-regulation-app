@@ -2,6 +2,7 @@
 
 from html import escape
 import json
+import logging
 import os
 import re
 from uuid import NAMESPACE_URL, uuid5
@@ -10,11 +11,18 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from texreg_core.archive_ui import (
+    inject_archive_styles,
+    render_archive_guide,
+    render_archive_metrics,
+    render_archive_notice,
+    render_archive_steps,
+    render_storage_summary,
+)
 from texreg_core.data_loader import load_products, load_regulations
 from texreg_core.history import (
     export_history_json,
     get_diagnosis_snapshot,
-    history_db_path,
     list_diagnosis_history,
     save_diagnosis_snapshot,
 )
@@ -30,11 +38,19 @@ from texreg_core.ui import (
 
 
 setup_page("제품 데이터베이스")
-page_heading(
-    "PRODUCT & REGULATION ARCHIVE",
-    "제품 데이터베이스",
-    "진단 당시의 제품 정보와 규제 스냅샷을 보존하고 현재 규제 DB와의 변화를 추적합니다.",
-)
+inject_archive_styles()
+LOGGER = logging.getLogger(__name__)
+
+heading_column, action_column = st.columns([4.2, 1], vertical_alignment="center")
+with heading_column:
+    page_heading(
+        "PRODUCT & REGULATION ARCHIVE",
+        "제품 데이터베이스",
+        "진단 당시의 제품 정보와 규제 스냅샷을 보존하고 현재 규제 DB와의 변화를 추적합니다.",
+    )
+with action_column:
+    if st.button("새 제품 진단", type="primary", width="stretch", key="archive_new_diagnosis"):
+        st.switch_page("pages/1_Product_Input.py")
 
 
 COMPARE_FIELDS = {
@@ -479,28 +495,45 @@ regulations = load_regulations()
 try:
     _ensure_example_history(load_products(), regulations)
     history = list_diagnosis_history()
-except Exception as error:
+except Exception:
+    LOGGER.exception("제품 데이터베이스 조회 실패")
     history = pd.DataFrame()
-    st.error(f"제품 데이터베이스를 열지 못했습니다: {error}")
+    st.error("제품 데이터베이스를 열지 못했습니다. 잠시 후 다시 시도하거나 관리자에게 문의해 주세요.")
 
 if st.session_state.get("history_save_error"):
     st.warning("현재 세션의 진단 결과를 영구 이력에 저장하지 못했습니다. 저장 위치 권한을 확인해 주세요.")
 
 if history.empty:
-    metric_values = [("누적 진단 기록", 0), ("등록 제품", 0), ("고위험 제품", 0), ("규제 DB 최근 확인", "-")]
+    metric_values = [
+        ("누적 진단 기록", "0개", "시점별 불변 스냅샷"),
+        ("등록 제품", "0개", "제품명 기준 최신 기록"),
+        ("고위험 제품", "0개", "최신 진단 위험도 높음"),
+        ("규제 DB 최근 확인", "-", "승인 데이터 기준일"),
+    ]
 else:
     latest_by_product = history.drop_duplicates(subset=["product_name"], keep="first")
     metric_values = [
-        ("누적 진단 기록", len(history)),
-        ("등록 제품", latest_by_product["product_name"].nunique()),
-        ("고위험 제품", int((latest_by_product["risk_level"] == "높음").sum())),
-        ("규제 DB 최근 확인", max(history["regulation_reviewed_at"].astype(str))),
+        ("누적 진단 기록", f"{len(history)}개", "시점별 불변 스냅샷"),
+        (
+            "등록 제품",
+            f"{latest_by_product['product_name'].nunique()}개",
+            "제품명 기준 최신 기록",
+        ),
+        (
+            "고위험 제품",
+            f"{int((latest_by_product['risk_level'] == '높음').sum())}개",
+            "최신 진단 위험도 높음",
+        ),
+        (
+            "규제 DB 최근 확인",
+            max(history["regulation_reviewed_at"].astype(str)),
+            "승인 데이터 기준일",
+        ),
     ]
 
-metric_columns = st.columns(4)
-for column, (label, value) in zip(metric_columns, metric_values):
-    with column:
-        st.metric(label, f"{value}개" if isinstance(value, int) else value)
+render_archive_steps(active_step=2 if not history.empty else 1)
+render_archive_notice(has_records=not history.empty)
+render_archive_metrics(metric_values)
 
 history_tab, portfolio_tab, backup_tab = st.tabs(["진단 기록", "현재 포트폴리오", "보관·백업"])
 
@@ -525,33 +558,52 @@ with history_tab:
                 "ruleset_version": "규칙 버전",
             }
         )
-        st.caption("행을 선택하면 진단 당시 규제와 현재 DB의 차이를 아래에서 확인할 수 있습니다.")
-        table_event = st.dataframe(
-            history_view,
-            width="stretch",
-            height=min(430, 54 + len(history_view) * 36),
-            hide_index=True,
-            column_order=[
-                "진단일시",
-                "기록 유형",
-                "제품명",
-                "판매·수출국",
-                "Risk Score",
-                "위험도",
-                "관련 규제 수",
-                "규제 기준일",
-                "규칙 버전",
-            ],
-            column_config={
-                "Risk Score": st.column_config.ProgressColumn(
-                    "Risk Score", min_value=0, max_value=100, format="%d"
-                ),
-                "관련 규제 수": st.column_config.NumberColumn("관련 규제 수", format="%d개"),
-            },
-            key="diagnosis_history_table",
-            on_select="rerun",
-            selection_mode="single-row",
-        )
+        record_column, guide_column = st.columns([3.2, 1], gap="large")
+        with record_column:
+            st.markdown(
+                """
+                <div class="archive-table-heading">
+                    <strong>진단 기록</strong>
+                    <span>행을 선택하면 진단 당시 규제와 현재 DB의 차이를 아래에서 확인할 수 있습니다.</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            table_event = st.dataframe(
+                history_view,
+                width="stretch",
+                height=min(430, 54 + len(history_view) * 36),
+                hide_index=True,
+                column_order=[
+                    "진단일시",
+                    "기록 유형",
+                    "제품명",
+                    "판매·수출국",
+                    "Risk Score",
+                    "위험도",
+                    "관련 규제 수",
+                    "규제 기준일",
+                    "규칙 버전",
+                ],
+                column_config={
+                    "Risk Score": st.column_config.ProgressColumn(
+                        "Risk Score", min_value=0, max_value=100, format="%d"
+                    ),
+                    "관련 규제 수": st.column_config.NumberColumn("관련 규제 수", format="%d개"),
+                },
+                key="diagnosis_history_table",
+                on_select="rerun",
+                selection_mode="single-row",
+            )
+        with guide_column:
+            render_archive_guide()
+            if st.button(
+                "새 제품 진단 시작",
+                type="primary",
+                width="stretch",
+                key="archive_guide_new_diagnosis",
+            ):
+                st.switch_page("pages/1_Product_Input.py")
         selected_rows = list(table_event.selection.rows)
         selected_position = selected_rows[0] if selected_rows else 0
         selected_record_id = str(history_view.iloc[selected_position]["기록 ID"])
@@ -664,7 +716,7 @@ with backup_tab:
     st.markdown(
         "진단 기록은 기존 행을 수정하지 않고 새 행으로만 추가됩니다. 규제 DB가 갱신돼도 과거 스냅샷의 점수, 매칭 근거와 대응방안은 그대로 유지됩니다."
     )
-    st.code(str(history_db_path()), language=None)
+    render_storage_summary()
     st.download_button(
         "전체 진단 이력 JSON 백업",
         data=export_history_json(),
