@@ -103,9 +103,12 @@ with stat_columns[1]:
 with stat_columns[2]:
     stat_card("진단 방식", "규칙 기반", "국가·물질·공정·소재·용도")
 
-db_col, spacer = st.columns([1.25, 3.75])
+db_col, monitor_col, spacer = st.columns([1.25, 1.35, 2.4])
 with db_col:
     if st.button("제품 데이터베이스 열기", width="stretch"):
         st.switch_page("pages/3_Risk_Dashboard.py")
+with monitor_col:
+    if st.button("최신 규제 모니터링", width="stretch"):
+        st.switch_page("pages/4_Regulation_Monitor.py")
 
 render_footer()

@@ -46,6 +46,7 @@ OFFICIAL_DOMAIN_SUFFIXES = {
     "eur-lex.europa.eu",
     "publications.europa.eu",
     "epa.gov",
+    "federalregister.gov",
     "p65warnings.ca.gov",
     "leginfo.legislature.ca.gov",
     "ftc.gov",
