@@ -5,7 +5,13 @@ import streamlit as st
 from texreg_core.data_loader import load_regulations
 from texreg_core.history import save_diagnosis_snapshot
 from texreg_core.matching import diagnose_product
-from texreg_core.ui import page_heading, render_footer, render_layer_stack, setup_page
+from texreg_core.ui import (
+    page_heading,
+    render_footer,
+    render_layer_stack,
+    render_process_steps,
+    setup_page,
+)
 
 
 setup_page("제품 규제 진단")
@@ -121,6 +127,7 @@ page_heading(
     "제품 정보 입력",
     "제품의 형태, 혼용률, 구조와 가공 정보를 입력하면 해당 조건을 규제 DB와 교차 분석합니다.",
 )
+render_process_steps(active_step=1)
 
 st.markdown(
     """

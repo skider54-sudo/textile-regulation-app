@@ -91,7 +91,10 @@ class ProductInputTest(unittest.TestCase):
 
         app.switch_page("pages/2_Diagnosis_Result.py").run(timeout=30)
         self.assertEqual(len(app.exception), 0)
+        self.assertIn("Test Leggings 진단 결과", [title.value for title in app.title])
         markdown_values = [element.value for element in app.markdown]
+        self.assertTrue(any('class="workflow-steps"' in value for value in markdown_values))
+        self.assertTrue(any('class="risk-alert ' in value for value in markdown_values))
         self.assertTrue(any("입력한 제품 구조 확인" in element.label for element in app.expander))
         self.assertTrue(any("공정·화학물질 추적 정보" in element.label for element in app.expander))
         self.assertTrue(any("실행형 상세 대응방안" in value for value in markdown_values))

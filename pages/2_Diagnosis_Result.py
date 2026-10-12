@@ -12,6 +12,8 @@ from texreg_core.ui import (
     regulation_status_badge,
     render_footer,
     render_layer_stack,
+    render_process_steps,
+    render_risk_alert,
     risk_badge,
     setup_page,
 )
@@ -60,20 +62,32 @@ def _process_detail_rows(value: object) -> list[dict]:
 
 
 setup_page("진단 결과")
-page_heading(
-    "ASSESSMENT RESULT",
-    "규제 진단 결과",
-    "매칭된 규제와 점수 근거를 확인하고 우선 대응항목을 검토하세요.",
-)
-
 result = st.session_state.get("current_result")
 
 if not result:
+    page_heading(
+        "REGULATION REVIEW",
+        "규제 진단 결과",
+        "제품 정보를 입력하면 관련 규제, Risk Score와 우선 대응항목을 확인할 수 있습니다.",
+    )
+    render_process_steps(active_step=2)
     st.warning("아직 진단 결과가 없습니다. 먼저 제품 정보를 입력해 주세요.")
     if st.button("제품 정보 입력하기", type="primary"):
         st.switch_page("pages/1_Product_Input.py")
     render_footer()
     st.stop()
+
+product = result.get("제품") or {}
+product_name = str(product.get("제품명") or "제품").strip() or "제품"
+score = int(result.get("score") or 0)
+level = str(result.get("위험도") or "낮음")
+
+page_heading(
+    "REGULATION REVIEW",
+    f"{product_name} 진단 결과",
+    "매칭된 규제와 점수 근거를 확인하고 우선 대응항목을 검토하세요.",
+)
+render_process_steps(active_step=2)
 
 if st.session_state.get("history_save_error"):
     st.warning(
@@ -81,17 +95,13 @@ if st.session_state.get("history_save_error"):
         "저장 위치 권한을 확인한 뒤 다시 진단해 주세요."
     )
 
-product = result["제품"]
-score = int(result["score"])
-level = result["위험도"]
-
 # 세션에 저장된 과거 진단도 최신 대응방안 DB로 보강한다.
 latest_regulations = {
     (str(row.get("국가", "")), str(row.get("규제명", ""))): row
     for row in load_regulations().to_dict(orient="records")
 }
 matches = []
-for match in result["규제"]:
+for match in result.get("규제", []):
     lookup_name = REGULATION_NAME_ALIASES.get(
         str(match.get("규제명", "")),
         str(match.get("규제명", "")),
@@ -102,7 +112,6 @@ for match in result["규제"]:
     )
     matches.append({**match, **latest})
 
-st.markdown(f"### {escape(product['제품명'])}")
 profile_summary = [
     product.get("제품형태"),
     product.get("제품용도"),
@@ -110,6 +119,14 @@ profile_summary = [
     f"판매·수출국 {product.get('수출국', '-')}"
 ]
 st.caption(" · ".join(str(value) for value in profile_summary if value))
+
+render_risk_alert(
+    product_name,
+    level,
+    score,
+    len(matches),
+    matches[0].get("규제명") if matches else None,
+)
 
 if product.get("Base fabric"):
     with st.expander("입력한 제품 구조 확인", expanded=False):
@@ -214,6 +231,7 @@ else:
         )
 
 if matches:
+    st.markdown('<div id="response-guide"></div>', unsafe_allow_html=True)
     st.markdown("### 실행형 상세 대응방안")
     selected_name = st.selectbox(
         "상세 확인할 규제",

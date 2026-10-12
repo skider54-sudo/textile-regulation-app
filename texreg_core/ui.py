@@ -20,13 +20,13 @@ REGULATION_STATUS_COLORS = {
 }
 
 
-def setup_page(title: str) -> None:
+def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
     """페이지 기본 설정과 공통 스타일을 적용한다."""
     st.set_page_config(
         page_title=f"{title} | TexReg Insight",
         page_icon="TR",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state=sidebar_state,
     )
     st.markdown(
         """
@@ -53,13 +53,13 @@ def setup_page(title: str) -> None:
         [data-testid="stSidebarNav"] { display: none; }
         [data-testid="stSidebar"] a { text-decoration: none; }
         [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: var(--muted); }
-        [data-testid="stPageLink-NavLink"] {
+        [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
             border-radius: 999px;
             padding: .72rem .95rem;
             margin: .18rem 0;
             font-weight: 700;
         }
-        [data-testid="stPageLink-NavLink"]:hover { background: var(--blue-soft); color: var(--blue); }
+        [data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover { background: var(--blue-soft); color: var(--blue); }
         h1, h2, h3 { color: var(--ink); letter-spacing: -0.045em; }
         h1 { font-size: 2.55rem !important; font-weight: 800 !important; }
         h2 { font-size: 1.7rem !important; }
@@ -102,39 +102,64 @@ def setup_page(title: str) -> None:
             padding: 1.35rem 1.5rem 1.55rem;
             box-shadow: 0 14px 42px rgba(17, 28, 66, 0.055);
         }
-        .hero {
-            position: relative;
-            overflow: hidden;
-            min-height: 420px;
-            display: flex;
-            align-items: center;
-            background:
-                radial-gradient(circle at 82% 18%, rgba(74,112,255,.22), transparent 28%),
-                linear-gradient(135deg, #F7F9FF 0%, #EEF2FF 55%, #E6ECFF 100%);
-            border: 1px solid #E2E7FA;
-            border-radius: 34px;
-            padding: 4.3rem 4.6rem;
-            margin-bottom: 1.35rem;
-            box-shadow: 0 22px 60px rgba(17, 28, 66, 0.09);
+        .portal-header {
+            align-items: center; background: rgba(255,255,255,.96); border: 1px solid var(--line);
+            border-radius: 18px; box-shadow: 0 8px 28px rgba(17,28,66,.045); display: flex;
+            gap: 24px; justify-content: space-between; margin-bottom: 18px; padding: 13px 18px;
         }
-        .hero-copy { position: relative; z-index: 2; width: min(70%, 760px); }
-        .hero-kicker { color: var(--blue); font-size: .76rem; font-weight: 900; letter-spacing: .16em; }
-        .hero h1 { color: var(--ink); font-size: 3.65rem !important; line-height: 1.08; margin: .65rem 0 1.05rem; max-width: 760px; }
-        .hero p { color: #4D5159; font-size: 1.06rem; max-width: 650px; margin: 0; }
-        .hero-tags { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1.45rem; }
-        .hero-tags span {
-            background: rgba(255,255,255,.78); border: 1px solid #D7DDF4; border-radius: 999px;
-            color: #38405A; font-size: .78rem; font-weight: 800; padding: .42rem .72rem;
+        .portal-brand { align-items: center; color: var(--ink) !important; display: flex; gap: 11px; text-decoration: none !important; }
+        .portal-brand__mark {
+            align-items: center; background: linear-gradient(145deg, #264FE5, #1428A0); border-radius: 11px;
+            color: #FFFFFF; display: inline-flex; font-size: .72rem; font-weight: 900; height: 38px;
+            justify-content: center; letter-spacing: -.02em; width: 38px;
         }
-        .hero-orbit {
-            position: absolute; right: 6.5%; top: 50%; transform: translateY(-50%);
-            width: 245px; height: 245px; border-radius: 50%;
-            background: linear-gradient(145deg, #2F5BFF 0%, #1428A0 58%, #081B72 100%);
-            box-shadow: 0 28px 65px rgba(20, 40, 160, .32), inset 0 1px 1px rgba(255,255,255,.35);
-            display: flex; align-items: center; justify-content: center; color: white;
+        .portal-brand strong { display: block; font-size: 1rem; letter-spacing: -.025em; }
+        .portal-brand small { color: #7B8495; display: block; font-size: .64rem; letter-spacing: .08em; margin-top: 1px; }
+        .portal-nav { align-items: center; display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+        .portal-nav span {
+            border-radius: 10px; color: #4E586B !important; font-size: .8rem; font-weight: 750;
+            padding: 8px 11px; text-decoration: none !important; transition: background .16s ease, color .16s ease;
         }
-        .orbit-score { font-size: 4.1rem; line-height: .9; font-weight: 900; letter-spacing: -.07em; }
-        .orbit-label { font-size: .72rem; margin-top: .7rem; letter-spacing: .12em; font-weight: 800; opacity: .78; }
+        .portal-hero {
+            background: linear-gradient(128deg, #F8FAFF 0%, #EDF2FF 58%, #E2E9FF 100%);
+            border: 1px solid #DCE4FA; border-radius: 27px; box-shadow: 0 18px 50px rgba(17,28,66,.075);
+            display: grid; gap: 34px; grid-template-columns: minmax(0,1.5fr) minmax(260px,.7fr);
+            margin-bottom: 18px; overflow: hidden; padding: 42px 46px; position: relative;
+        }
+        .portal-hero::after {
+            background: radial-gradient(circle, rgba(42,82,220,.19), transparent 66%); content: "";
+            height: 330px; position: absolute; right: -80px; top: -145px; width: 330px;
+        }
+        .portal-hero__copy { position: relative; z-index: 1; }
+        .portal-hero__eyebrow { color: var(--blue); font-size: .72rem; font-weight: 900; letter-spacing: .15em; }
+        .portal-hero h1 { font-size: 3.1rem !important; line-height: 1.1; margin: 9px 0 13px; max-width: 720px; }
+        .portal-hero p { color: #525D71; font-size: 1rem; margin: 0; max-width: 680px; }
+        .portal-hero__facts { align-content: center; display: grid; gap: 9px; position: relative; z-index: 1; }
+        .portal-fact {
+            background: rgba(255,255,255,.82); border: 1px solid rgba(202,213,243,.9); border-radius: 14px;
+            display: flex; justify-content: space-between; padding: 11px 13px;
+        }
+        .portal-fact span { color: #697386; font-size: .75rem; }
+        .portal-fact strong { color: #15265D; font-size: .82rem; }
+        .portal-section-heading { align-items: flex-end; display: flex; justify-content: space-between; margin: 29px 2px 12px; }
+        .portal-section-heading strong { color: var(--ink); font-size: 1.22rem; }
+        .portal-section-heading span { color: var(--muted); font-size: .78rem; }
+        .st-key-home_portal_steps div.stButton > button {
+            align-items: flex-start; background: #FFFFFF; border: 1px solid var(--line); border-radius: 18px;
+            box-shadow: 0 10px 28px rgba(17,28,66,.045); color: var(--ink); justify-content: flex-start;
+            font-weight: 600; min-height: 142px; padding: 20px; text-align: left; width: 100%;
+        }
+        .st-key-home_portal_steps div.stButton > button:hover {
+            background: #F8FAFF; border-color: #B9C7F6; color: var(--blue);
+            box-shadow: 0 15px 34px rgba(17,28,66,.085); transform: translateY(-2px);
+        }
+        .st-key-home_portal_steps div.stButton > button:focus-visible {
+            outline: 3px solid rgba(20,40,160,.28); outline-offset: 3px;
+        }
+        .st-key-home_portal_steps div.stButton > button p {
+            color: var(--muted); font-size: .86rem; line-height: 1.65; text-align: left; white-space: pre-line;
+        }
+        .st-key-home_portal_steps div.stButton > button strong { color: var(--ink); font-size: 1rem; }
         .page-kicker { color: var(--blue); font-weight: 900; letter-spacing: .14em; font-size: .73rem; }
         .page-lead { color: var(--muted); margin-top: -.5rem; margin-bottom: 1.55rem; }
         .panel {
@@ -265,19 +290,44 @@ def setup_page(title: str) -> None:
         .snapshot-banner span { display: block; font-size: .67rem; font-weight: 900; letter-spacing: .12em; opacity: .72; }
         .snapshot-banner strong { display: block; font-size: 1.12rem; margin-top: 4px; }
         .snapshot-banner__meta { font-size: .74rem; line-height: 1.6; opacity: .82; text-align: right; }
-        .flow-card {
-            min-height: 168px;
-            background: white;
-            border: 1px solid #EAECF0;
-            border-radius: 22px;
-            padding: 1.35rem;
-            box-shadow: 0 12px 32px rgba(17, 28, 66, .05);
-            transition: transform .18s ease, box-shadow .18s ease;
+        .workflow-steps {
+            background: #FFFFFF; border: 1px solid #DEE3ED; border-radius: 18px; display: grid; gap: 0;
+            grid-template-columns: repeat(3,minmax(0,1fr)); margin: 5px 0 22px; overflow: hidden;
+            box-shadow: 0 8px 24px rgba(17,28,66,.035);
         }
-        .flow-card:hover { transform: translateY(-3px); box-shadow: 0 17px 38px rgba(17, 28, 66, .09); }
-        .flow-number { color: var(--blue); font-size: 1.4rem; font-weight: 900; letter-spacing: -.04em; }
-        .flow-card h3 { font-size: 1.05rem !important; margin: 1.2rem 0 .4rem !important; letter-spacing: -.025em; }
-        .flow-card p { color: var(--muted); font-size: .88rem; margin: 0; }
+        .workflow-step {
+            align-items: center; color: inherit !important; display: grid; gap: 12px;
+            grid-template-columns: 42px minmax(0,1fr) 16px; min-height: 88px; padding: 14px 18px;
+            position: relative; text-decoration: none !important;
+        }
+        .workflow-step:not(:last-child) { border-right: 1px solid var(--line); }
+        .workflow-step__number {
+            align-items: center; background: #F0F2F6; border-radius: 50%; color: #8992A3; display: inline-flex;
+            font-size: .72rem; font-weight: 900; height: 38px; justify-content: center; width: 38px;
+        }
+        .workflow-step strong { color: #4E586B; display: block; font-size: .92rem; }
+        .workflow-step small { color: #8A93A3; display: block; font-size: .7rem; line-height: 1.4; margin-top: 2px; }
+        .workflow-step__arrow { color: #C7CED9; font-size: 1.2rem; }
+        .workflow-step--active { background: #F7F9FF; }
+        .workflow-step--active .workflow-step__number { background: var(--blue); color: #FFFFFF; }
+        .workflow-step--active strong { color: var(--ink); }
+        .workflow-step--complete .workflow-step__number { background: #EAF7F2; color: #087453; }
+        .workflow-step--complete strong { color: #426257; }
+        .risk-alert {
+            align-items: center; border: 1px solid; border-left-width: 5px; border-radius: 17px; display: grid;
+            gap: 14px; grid-template-columns: 46px minmax(0,1fr) auto; margin: 7px 0 20px; padding: 17px 18px;
+        }
+        .risk-alert--medium { background: #FFFCF5; border-color: #E8CC8D; color: #684B18; }
+        .risk-alert--high { background: #FFF7F6; border-color: #E7AAA5; color: #7A271A; }
+        .risk-alert__icon {
+            align-items: center; background: rgba(255,255,255,.76); border: 1px solid currentColor; border-radius: 13px;
+            display: inline-flex; font-size: 1.15rem; font-weight: 900; height: 42px; justify-content: center; width: 42px;
+        }
+        .risk-alert strong { display: block; font-size: 1.05rem; margin-bottom: 3px; }
+        .risk-alert p { color: inherit; font-size: .8rem; line-height: 1.55; margin: 0; opacity: .86; }
+        .risk-alert__meta { text-align: right; white-space: nowrap; }
+        .risk-alert__meta span { display: block; font-size: .67rem; font-weight: 800; opacity: .72; }
+        .risk-alert__meta b { display: block; font-size: 1.15rem; margin-top: 2px; }
         .stat-card {
             background: white; border: 1px solid #EAECF0; border-radius: 22px; padding: 1.25rem 1.35rem;
             box-shadow: 0 12px 32px rgba(17, 28, 66, .05);
@@ -339,15 +389,15 @@ def setup_page(title: str) -> None:
         .footer-note { color: #7B8794; font-size: .78rem; border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 2rem; }
         [data-testid="stAlert"] { border-radius: 16px; }
         @media (max-width: 900px) {
-            .hero { min-height: auto; padding: 2.8rem 2rem; }
-            .hero-copy { width: 100%; }
-            .hero h1 { font-size: 2.65rem !important; }
-            .hero-orbit { display: none; }
+            .portal-hero { grid-template-columns: 1fr; padding: 34px 32px; }
+            .portal-hero__facts { grid-template-columns: repeat(3,minmax(0,1fr)); }
+            .workflow-steps { grid-template-columns: 1fr; }
+            .workflow-step { grid-template-columns: 38px minmax(0,1fr); }
+            .workflow-step:not(:last-child) { border-bottom: 1px solid var(--line); border-right: 0; }
+            .workflow-step__arrow { display: none; }
         }
         @media (max-width: 700px) {
             .block-container { padding-top: 1.35rem; }
-            .hero { border-radius: 24px; padding: 2.3rem 1.45rem; }
-            .hero h1 { font-size: 2.2rem !important; }
             .reg-row { grid-template-columns: 1fr; gap: .55rem; }
             .action-step { grid-template-columns: 36px 1fr; }
             .layer-visual { grid-template-columns: 1fr; padding: 17px; }
@@ -355,6 +405,26 @@ def setup_page(title: str) -> None:
             .trace-card__grid, .regulation-timeline { grid-template-columns: 1fr 1fr; }
             .snapshot-banner { align-items: flex-start; flex-direction: column; gap: 10px; }
             .snapshot-banner__meta { text-align: left; }
+            .portal-header { align-items: flex-start; flex-direction: column; gap: 9px; }
+            .portal-nav { justify-content: flex-start; }
+            .portal-nav span { padding: 6px 8px; }
+            .portal-hero { border-radius: 22px; padding: 28px 22px; }
+            .portal-hero h1 { font-size: 2.2rem !important; }
+            .portal-hero__facts { grid-template-columns: 1fr; }
+            .portal-section-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
+            .workflow-steps { grid-template-columns: 1fr; }
+            .workflow-step { min-height: 74px; }
+            .workflow-step:not(:last-child) { border-bottom: 1px solid var(--line); border-right: 0; }
+            .risk-alert { align-items: flex-start; grid-template-columns: 42px minmax(0,1fr); }
+            .risk-alert__meta { grid-column: 2; text-align: left; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            div.stButton > button, div.stFormSubmitButton > button {
+                transition: none;
+            }
+            div.stButton > button:hover, div.stFormSubmitButton > button:hover {
+                transform: none;
+            }
         }
         </style>
         """,
@@ -384,6 +454,100 @@ def render_sidebar() -> None:
         st.page_link("pages/3_Risk_Dashboard.py", label="제품 데이터베이스")
         st.markdown("---")
         st.caption("Prototype 2.5 · 12 markets")
+
+
+def render_portal_header() -> None:
+    """홈 화면 상단에 서비스 정체성과 주요 영역을 안내한다."""
+    st.markdown(
+        """
+        <header class="portal-header">
+            <div class="portal-brand">
+                <span class="portal-brand__mark">TR</span>
+                <span>
+                    <strong>TexReg Insight</strong>
+                    <small>TEXTILE REGULATION PORTAL</small>
+                </span>
+            </div>
+            <nav class="portal-nav" aria-label="서비스 주요 영역">
+                <span>제품 정보</span>
+                <span>규제 진단</span>
+                <span>대응 가이드</span>
+                <span>제품 데이터베이스</span>
+            </nav>
+        </header>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_process_steps(active_step: int) -> None:
+    """제품 입력부터 대응 가이드까지의 현재 진행 단계를 표시한다."""
+    steps = [
+        (1, "제품 정보", "기본 정보와 제품 구성"),
+        (2, "규제 진단", "검토 항목과 위험도 확인"),
+        (3, "대응 가이드", "필요한 자료와 다음 조치"),
+    ]
+    step_html = []
+    for index, title, description in steps:
+        state_class = ""
+        number = f"{index:02d}"
+        current = ""
+        if index == active_step:
+            state_class = " workflow-step--active"
+            current = ' aria-current="step"'
+        elif index < active_step:
+            state_class = " workflow-step--complete"
+            number = "✓"
+        arrow = '<span class="workflow-step__arrow" aria-hidden="true">›</span>' if index < 3 else ""
+        step_html.append(
+            f'<div class="workflow-step{state_class}"{current}>'
+            f'<span class="workflow-step__number">{number}</span>'
+            f'<span><strong>{escape(title)}</strong><small>{escape(description)}</small></span>'
+            f"{arrow}</div>"
+        )
+    st.markdown(
+        f'<div class="workflow-steps" aria-label="진단 진행 과정">{"".join(step_html)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_risk_alert(
+    product_name: object,
+    level: str,
+    score: int,
+    regulation_count: int,
+    top_regulation: object | None = None,
+) -> None:
+    """종합 위험도가 보통 이상일 때 결과 상단에 우선 확인 메시지를 표시한다."""
+    if level not in {"보통", "높음"}:
+        return
+
+    is_high = level == "높음"
+    modifier = "risk-alert--high" if is_high else "risk-alert--medium"
+    heading = "즉시 대응 검토가 필요합니다" if is_high else "우선 확인이 필요합니다"
+    action = (
+        "출시·출하 전 핵심 규제의 적용 여부와 시험·공급망 증빙을 먼저 확인하세요."
+        if is_high
+        else "매칭된 규제의 성분·공정 정보와 공급망 증빙을 우선 점검하세요."
+    )
+    regulation_text = (
+        f" 특히 {escape(str(top_regulation))}부터 확인하는 것이 좋습니다."
+        if top_regulation
+        else ""
+    )
+    st.markdown(
+        f"""
+        <div class="risk-alert {modifier}" role="alert">
+            <span class="risk-alert__icon" aria-hidden="true">!</span>
+            <div>
+                <strong>{heading}</strong>
+                <p>{escape(str(product_name))}의 종합 위험도는 {escape(level)}이며 관련 규제 {int(regulation_count)}건이 확인되었습니다. {action}{regulation_text}</p>
+            </div>
+            <div class="risk-alert__meta"><span>RISK SCORE</span><b>{int(score)} / 100</b></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def page_heading(kicker: str, title: str, description: str) -> None:
