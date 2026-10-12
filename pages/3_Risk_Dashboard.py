@@ -306,7 +306,7 @@ def _render_snapshot_detail(snapshot: dict, regulations: pd.DataFrame) -> None:
                 <strong>{escape(str(product.get('제품명', '-')))}</strong>
             </div>
             <div class="snapshot-banner__meta">
-                진단 {_format_datetime(metadata.get('diagnosed_at'))}<br>
+                진단 {escape(_format_datetime(metadata.get('diagnosed_at')))}<br>
                 {escape(SOURCE_LABELS.get(str(metadata.get('source', '')), str(metadata.get('source', '-'))))}<br>
                 규칙 {escape(str(metadata.get('ruleset_version', '-')))} · {escape(str(metadata.get('ruleset_fingerprint', '-')))}
             </div>
