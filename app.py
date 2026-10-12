@@ -1,12 +1,20 @@
 """TexReg Insight 포털형 홈 화면."""
 
+from inspect import signature
+
 import streamlit as st
 
 from texreg_core.data_loader import load_products, load_regulations
-from texreg_core.ui import render_footer, render_portal_header, setup_page, stat_card
+from texreg_core.portal_ui import inject_portal_styles, render_portal_header
+from texreg_core.ui import render_footer, setup_page, stat_card
 
 
-setup_page("Home", sidebar_state="collapsed")
+if "sidebar_state" in signature(setup_page).parameters:
+    setup_page("Home", sidebar_state="collapsed")
+else:
+    # 배포 직후 이전 공용 UI 모듈이 잠시 남아 있어도 홈을 정상 구동한다.
+    setup_page("Home")
+inject_portal_styles()
 
 products = load_products()
 regulations = load_regulations()

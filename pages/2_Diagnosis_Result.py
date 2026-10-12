@@ -7,13 +7,16 @@ import re
 import streamlit as st
 
 from texreg_core.data_loader import load_regulations
+from texreg_core.portal_ui import (
+    inject_portal_styles,
+    render_process_steps,
+    render_risk_alert,
+)
 from texreg_core.ui import (
     page_heading,
     regulation_status_badge,
     render_footer,
     render_layer_stack,
-    render_process_steps,
-    render_risk_alert,
     risk_badge,
     setup_page,
 )
@@ -62,6 +65,7 @@ def _process_detail_rows(value: object) -> list[dict]:
 
 
 setup_page("진단 결과")
+inject_portal_styles()
 result = st.session_state.get("current_result")
 
 if not result:
