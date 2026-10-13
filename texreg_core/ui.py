@@ -452,9 +452,8 @@ def render_sidebar() -> None:
         st.page_link("pages/1_Product_Input.py", label="제품 규제 진단")
         st.page_link("pages/2_Diagnosis_Result.py", label="진단 결과")
         st.page_link("pages/3_Risk_Dashboard.py", label="제품 데이터베이스")
-        st.page_link("pages/4_Regulation_Monitor.py", label="최신 규제 모니터링")
         st.markdown("---")
-        st.caption("Prototype 2.6 · 12 markets")
+        st.caption("Prototype 2.5 · 12 markets")
 
 
 def render_portal_header() -> None:
@@ -474,7 +473,6 @@ def render_portal_header() -> None:
                 <span>규제 진단</span>
                 <span>대응 가이드</span>
                 <span>제품 데이터베이스</span>
-                <span>최신 규제 모니터링</span>
             </nav>
         </header>
         """,
