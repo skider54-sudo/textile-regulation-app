@@ -12,6 +12,10 @@ from texreg_core.portal_ui import (
     render_process_steps,
     render_risk_alert,
 )
+from texreg_core.sidebar_runtime import install_sidebar_patch
+
+install_sidebar_patch()
+
 from texreg_core.ui import (
     page_heading,
     regulation_status_badge,

@@ -6,6 +6,10 @@ from texreg_core.data_loader import load_regulations
 from texreg_core.history import save_diagnosis_snapshot
 from texreg_core.matching import diagnose_product
 from texreg_core.portal_ui import inject_portal_styles, render_process_steps
+from texreg_core.sidebar_runtime import install_sidebar_patch
+
+install_sidebar_patch()
+
 from texreg_core.ui import (
     page_heading,
     render_footer,

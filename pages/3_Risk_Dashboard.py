@@ -28,6 +28,10 @@ from texreg_core.history import (
 )
 from texreg_core.matching import diagnose_product
 from texreg_core.source_monitor import check_regulation_sources, latest_source_statuses
+from texreg_core.sidebar_runtime import install_sidebar_patch
+
+install_sidebar_patch()
+
 from texreg_core.ui import (
     page_heading,
     regulation_status_badge,

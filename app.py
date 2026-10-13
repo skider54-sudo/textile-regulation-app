@@ -6,6 +6,10 @@ import streamlit as st
 
 from texreg_core.data_loader import load_products, load_regulations
 from texreg_core.portal_ui import inject_portal_styles, render_portal_header
+from texreg_core.sidebar_runtime import install_sidebar_patch
+
+install_sidebar_patch()
+
 from texreg_core.ui import render_footer, setup_page, stat_card
 
 

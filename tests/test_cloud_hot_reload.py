@@ -5,6 +5,7 @@ import sys
 from types import ModuleType
 import unittest
 
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
 
@@ -28,9 +29,19 @@ class CloudHotReloadCompatibilityTests(unittest.TestCase):
         for name in stable_names:
             setattr(legacy_ui, name, getattr(current_ui, name))
 
-        # 이전 배포의 setup_page는 sidebar_state 키워드를 받지 않았다.
+        # 이전 배포의 setup_page는 sidebar_state 키워드를 받지 않았으며,
+        # 이제 삭제된 모니터링 페이지를 사이드바에서 계속 참조했다.
+        def stale_render_sidebar() -> None:
+            st.page_link(
+                "pages/4_Regulation_Monitor.py",
+                label="최신 규제 모니터링",
+            )
+
+        legacy_ui.render_sidebar = stale_render_sidebar
+
         def legacy_setup_page(title: str) -> None:
-            current_ui.setup_page(title)
+            st.set_page_config(page_title=title)
+            legacy_ui.render_sidebar()
 
         legacy_ui.setup_page = legacy_setup_page
         original_ui = sys.modules["texreg_core.ui"]
