@@ -5,6 +5,7 @@ from inspect import signature
 import streamlit as st
 
 from texreg_core.data_loader import load_products, load_regulations
+from texreg_core.palette_runtime import inject_brand_palette
 from texreg_core.portal_ui import inject_portal_styles, render_portal_header
 from texreg_core.sidebar_runtime import install_sidebar_patch
 
@@ -19,6 +20,7 @@ else:
     # 배포 직후 이전 공용 UI 모듈이 잠시 남아 있어도 홈을 정상 구동한다.
     setup_page("Home")
 inject_portal_styles()
+inject_brand_palette()
 
 products = load_products()
 regulations = load_regulations()

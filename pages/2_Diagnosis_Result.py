@@ -7,6 +7,7 @@ import re
 import streamlit as st
 
 from texreg_core.data_loader import load_regulations
+from texreg_core.palette_runtime import inject_brand_palette
 from texreg_core.portal_ui import (
     inject_portal_styles,
     render_process_steps,
@@ -70,6 +71,7 @@ def _process_detail_rows(value: object) -> list[dict]:
 
 setup_page("진단 결과")
 inject_portal_styles()
+inject_brand_palette()
 result = st.session_state.get("current_result")
 
 if not result:

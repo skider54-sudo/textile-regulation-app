@@ -5,6 +5,7 @@ import streamlit as st
 from texreg_core.data_loader import load_regulations
 from texreg_core.history import save_diagnosis_snapshot
 from texreg_core.matching import diagnose_product
+from texreg_core.palette_runtime import inject_brand_palette
 from texreg_core.portal_ui import inject_portal_styles, render_process_steps
 from texreg_core.sidebar_runtime import install_sidebar_patch
 
@@ -20,6 +21,7 @@ from texreg_core.ui import (
 
 setup_page("제품 규제 진단")
 inject_portal_styles()
+inject_brand_palette()
 
 
 MATERIAL_OPTIONS = [

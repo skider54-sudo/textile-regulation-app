@@ -27,6 +27,7 @@ from texreg_core.history import (
     save_diagnosis_snapshot,
 )
 from texreg_core.matching import diagnose_product
+from texreg_core.palette_runtime import inject_brand_palette
 from texreg_core.source_monitor import check_regulation_sources, latest_source_statuses
 from texreg_core.sidebar_runtime import install_sidebar_patch
 
@@ -43,6 +44,7 @@ from texreg_core.ui import (
 
 setup_page("제품 데이터베이스")
 inject_archive_styles()
+inject_brand_palette()
 LOGGER = logging.getLogger(__name__)
 
 heading_column, action_column = st.columns([4.2, 1], vertical_alignment="center")
@@ -701,7 +703,7 @@ with portfolio_tab:
                 y="규제명",
                 orientation="h",
                 text="영향 제품 수",
-                color_discrete_sequence=["#1428A0"],
+                color_discrete_sequence=["#243A8F"],
             )
             impact_chart.update_layout(
                 height=max(320, len(impact_frame) * 46),

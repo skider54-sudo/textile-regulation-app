@@ -35,8 +35,8 @@ def inject_archive_styles() -> None:
             margin-top: 2px;
         }
         .archive-step__arrow { color: #C7CED9; font-size: 1.15rem; }
-        .archive-step--active { background: #F6F8FF; }
-        .archive-step--active .archive-step__number { background: #1428A0; color: #FFFFFF; }
+        .archive-step--active { background: #F4F6FB; }
+        .archive-step--active .archive-step__number { background: #243A8F; color: #FFFFFF; }
         .archive-step--active strong { color: #101828; }
         .archive-step--complete .archive-step__number { background: #EAF7F2; color: #087453; }
         .archive-step--complete strong { color: #426257; }
@@ -67,10 +67,11 @@ def inject_archive_styles() -> None:
             padding: 17px 19px; position: relative;
         }
         .archive-metric__icon {
-            align-items: center; background: #EFF3FF; border-radius: 10px; color: #4864C8;
+            align-items: center; background: #EEF2FA; border-radius: 10px; color: #3F5FB7;
             display: inline-flex; font-size: .82rem; font-weight: 900; height: 34px;
             justify-content: center; position: absolute; right: 16px; top: 16px; width: 34px;
         }
+        .archive-metric:nth-child(3) .archive-metric__icon { background: #FCF0F2; color: #C7354A; }
         .archive-metric > span:not(.archive-metric__icon) {
             color: #718096; display: block; font-size: .76rem;
         }
@@ -94,26 +95,26 @@ def inject_archive_styles() -> None:
             margin-top: 13px;
         }
         .archive-guide__number {
-            align-items: center; background: #EEF3FF; border-radius: 50%; color: #2146C7;
+            align-items: center; background: #EEF2FA; border-radius: 50%; color: #243A8F;
             display: inline-flex; font-size: .68rem; font-weight: 900; height: 25px;
             justify-content: center; width: 25px;
         }
         .archive-guide__item strong { color: #344054; display: block; font-size: .78rem; }
         .archive-guide__item small { color: #7D899B; display: block; font-size: .68rem; line-height: 1.5; margin-top: 2px; }
         .archive-reading-note {
-            background: #EEF4FF; border: 1px solid #D6E2FA; border-radius: 16px;
-            color: #35507E; font-size: .72rem; line-height: 1.65; padding: 14px 15px;
+            background: #F1F4FA; border: 1px solid #D8DFEC; border-radius: 16px;
+            color: #445273; font-size: .72rem; line-height: 1.65; padding: 14px 15px;
         }
         .archive-reading-note strong { display: block; margin-bottom: 4px; }
         .archive-storage {
-            background: linear-gradient(135deg,#F7F9FF,#F1F5FC); border: 1px solid #DCE4F1;
+            background: linear-gradient(135deg,#F9FAFD,#F1F4FA); border: 1px solid #DDE3EF;
             border-radius: 18px; display: grid; gap: 12px;
             grid-template-columns: repeat(3,minmax(0,1fr)); margin: 14px 0 16px;
             padding: 16px;
         }
         .archive-storage__item { background: rgba(255,255,255,.82); border-radius: 13px; padding: 13px; }
         .archive-storage__item span { color: #7B8797; display: block; font-size: .67rem; }
-        .archive-storage__item strong { color: #273B61; display: block; font-size: .82rem; margin-top: 4px; }
+        .archive-storage__item strong { color: #34405C; display: block; font-size: .82rem; margin-top: 4px; }
         .archive-privacy-note { color: #7B8797; font-size: .7rem; margin: -4px 2px 13px; }
         @media (max-width: 950px) {
             .archive-metrics { grid-template-columns: 1fr 1fr; }

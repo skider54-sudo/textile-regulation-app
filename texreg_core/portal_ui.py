@@ -28,7 +28,7 @@ def inject_portal_styles() -> None:
             display: flex; gap: 11px; text-decoration: none !important;
         }
         .portal-brand__mark {
-            align-items: center; background: linear-gradient(145deg, #264FE5, #1428A0);
+            align-items: center; background: linear-gradient(145deg, #C7354A 0%, #C7354A 42%, #3F5FB7 58%, #243A8F 100%);
             border-radius: 11px; color: #FFFFFF; display: inline-flex;
             font-size: .72rem; font-weight: 900; height: 38px; justify-content: center;
             letter-spacing: -.02em; width: 38px;
@@ -47,20 +47,20 @@ def inject_portal_styles() -> None:
             font-weight: 750; padding: 8px 11px; text-decoration: none !important;
         }
         .portal-hero {
-            background: linear-gradient(128deg, #F8FAFF 0%, #EDF2FF 58%, #E2E9FF 100%);
-            border: 1px solid #DCE4FA; border-radius: 27px;
+            background: linear-gradient(128deg, #FBFCFF 0%, #F0F3FA 58%, #F8EFF2 100%);
+            border: 1px solid #DCE2EE; border-radius: 27px;
             box-shadow: 0 18px 50px rgba(17,28,66,.075); display: grid; gap: 34px;
             grid-template-columns: minmax(0,1.5fr) minmax(260px,.7fr);
             margin-bottom: 18px; overflow: hidden; padding: 42px 46px; position: relative;
         }
         .portal-hero::after {
-            background: radial-gradient(circle, rgba(42,82,220,.19), transparent 66%);
+            background: radial-gradient(circle, rgba(199,53,74,.12), transparent 66%);
             content: ""; height: 330px; position: absolute; right: -80px;
             top: -145px; width: 330px;
         }
         .portal-hero__copy { position: relative; z-index: 1; }
         .portal-hero__eyebrow {
-            color: var(--blue, #1428A0); font-size: .72rem; font-weight: 900;
+            color: #C7354A; font-size: .72rem; font-weight: 900;
             letter-spacing: .15em;
         }
         .portal-hero h1 {
@@ -72,12 +72,12 @@ def inject_portal_styles() -> None:
             align-content: center; display: grid; gap: 9px; position: relative; z-index: 1;
         }
         .portal-fact {
-            background: rgba(255,255,255,.82); border: 1px solid rgba(202,213,243,.9);
+            background: rgba(255,255,255,.84); border: 1px solid rgba(205,214,233,.92);
             border-radius: 14px; display: flex; justify-content: space-between;
             padding: 11px 13px;
         }
         .portal-fact span { color: #697386; font-size: .75rem; }
-        .portal-fact strong { color: #15265D; font-size: .82rem; }
+        .portal-fact strong { color: #243A70; font-size: .82rem; }
         .portal-section-heading {
             align-items: flex-end; display: flex; justify-content: space-between;
             margin: 29px 2px 12px;
@@ -94,12 +94,12 @@ def inject_portal_styles() -> None:
             min-height: 142px; padding: 20px; text-align: left; width: 100%;
         }
         .st-key-home_portal_steps div.stButton > button:hover {
-            background: #F8FAFF; border-color: #B9C7F6;
-            color: var(--blue, #1428A0); box-shadow: 0 15px 34px rgba(17,28,66,.085);
+            background: #F5F7FC; border-color: #BCC9E3;
+            color: var(--blue, #243A8F); box-shadow: 0 15px 34px rgba(17,28,66,.085);
             transform: translateY(-2px);
         }
         .st-key-home_portal_steps div.stButton > button:focus-visible {
-            outline: 3px solid rgba(20,40,160,.28); outline-offset: 3px;
+            outline: 3px solid rgba(36,58,143,.25); outline-offset: 3px;
         }
         .st-key-home_portal_steps div.stButton > button p {
             color: var(--muted, #64676D); font-size: .86rem; line-height: 1.65;
@@ -133,9 +133,9 @@ def inject_portal_styles() -> None:
             margin-top: 2px;
         }
         .workflow-step__arrow { color: #C7CED9; font-size: 1.2rem; }
-        .workflow-step--active { background: #F7F9FF; }
+        .workflow-step--active { background: #F4F6FB; }
         .workflow-step--active .workflow-step__number {
-            background: var(--blue, #1428A0); color: #FFFFFF;
+            background: var(--blue, #243A8F); color: #FFFFFF;
         }
         .workflow-step--active strong { color: var(--ink, #101114); }
         .workflow-step--complete .workflow-step__number {
