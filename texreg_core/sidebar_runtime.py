@@ -6,18 +6,18 @@ from importlib import import_module
 
 import streamlit as st
 
+from texreg_core.brand_assets import brand_logo_data_uri
+
 
 def render_sidebar() -> None:
     """현재 배포에 존재하는 페이지만 사용해 탐색 메뉴를 표시한다."""
+    logo_uri = brand_logo_data_uri()
     with st.sidebar:
         st.markdown(
-            """
+            f"""
             <div class="sidebar-brand">
-                <span class="brand-mark">TR</span>
-                <span>
-                    <strong>TexReg Insight</strong>
-                    <small>GLOBAL COMPLIANCE</small>
-                </span>
+                <img class="sidebar-brand__logo" src="{logo_uri}"
+                     alt="TexReg Insight · Textile Regulation Portal">
             </div>
             """,
             unsafe_allow_html=True,

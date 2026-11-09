@@ -6,6 +6,8 @@ from html import escape
 
 import streamlit as st
 
+from texreg_core.brand_assets import brand_logo_data_uri, brand_mark_image
+
 
 RISK_COLORS = {
     "높음": ("#B42318", "#FEF3F2"),
@@ -24,7 +26,7 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
     """페이지 기본 설정과 공통 스타일을 적용한다."""
     st.set_page_config(
         page_title=f"{title} | TexReg Insight",
-        page_icon="TR",
+        page_icon=brand_mark_image(),
         layout="wide",
         initial_sidebar_state=sidebar_state,
     )
@@ -32,14 +34,15 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
         """
         <style>
         :root {
-            --blue: #243A8F;
-            --blue-deep: #17285F;
-            --blue-soft: #EEF2FA;
-            --ink: #101114;
-            --muted: #747477;
-            --line: #E4E6EC;
+            --blue: #034992;
+            --blue-deep: #011F46;
+            --blue-soft: #EEF5FB;
+            --red: #DC1925;
+            --ink: #07192F;
+            --muted: #607085;
+            --line: #DBE4EE;
             --surface: #FFFFFF;
-            --canvas: #F7F8FA;
+            --canvas: #F4F8FC;
         }
         html, body, [class*="css"] { font-family: Arial, "Noto Sans KR", sans-serif; }
         .stApp {
@@ -72,7 +75,7 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             color: white;
             font-weight: 800;
             min-height: 48px;
-            box-shadow: 0 8px 22px rgba(36, 58, 143, 0.15);
+            box-shadow: 0 8px 22px rgba(3, 73, 146, 0.17);
             transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
         }
         div.stButton > button:hover, div.stFormSubmitButton > button:hover {
@@ -80,7 +83,7 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             background: var(--blue-deep);
             color: white;
             transform: translateY(-1px);
-            box-shadow: 0 11px 26px rgba(36, 58, 143, 0.21);
+            box-shadow: 0 11px 26px rgba(1, 31, 70, 0.24);
         }
         div[data-testid="stMetric"] {
             background: white;
@@ -108,30 +111,27 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             gap: 24px; justify-content: space-between; margin-bottom: 18px; padding: 13px 18px;
         }
         .portal-brand { align-items: center; color: var(--ink) !important; display: flex; gap: 11px; text-decoration: none !important; }
-        .portal-brand__mark {
-            align-items: center; background: linear-gradient(145deg, #C7354A 0%, #C7354A 42%, #3F5FB7 58%, #243A8F 100%); border-radius: 11px;
-            color: #FFFFFF; display: inline-flex; font-size: .72rem; font-weight: 900; height: 38px;
-            justify-content: center; letter-spacing: -.02em; width: 38px;
+        .portal-brand__logo {
+            display: block; height: 64px; max-width: min(270px, 34vw);
+            object-fit: contain; object-position: left center; width: auto;
         }
-        .portal-brand strong { display: block; font-size: 1rem; letter-spacing: -.025em; }
-        .portal-brand small { color: #7B8495; display: block; font-size: .64rem; letter-spacing: .08em; margin-top: 1px; }
         .portal-nav { align-items: center; display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
         .portal-nav span {
             border-radius: 10px; color: #4E586B !important; font-size: .8rem; font-weight: 750;
             padding: 8px 11px; text-decoration: none !important; transition: background .16s ease, color .16s ease;
         }
         .portal-hero {
-            background: linear-gradient(128deg, #FBFCFF 0%, #F0F3FA 58%, #F8EFF2 100%);
-            border: 1px solid #DCE2EE; border-radius: 27px; box-shadow: 0 18px 50px rgba(17,28,66,.075);
+            background: linear-gradient(128deg, #FBFDFF 0%, #EAF3FB 58%, #FFF1F2 100%);
+            border: 1px solid #D5E2EF; border-radius: 27px; box-shadow: 0 18px 50px rgba(1,31,70,.09);
             display: grid; gap: 34px; grid-template-columns: minmax(0,1.5fr) minmax(260px,.7fr);
             margin-bottom: 18px; overflow: hidden; padding: 42px 46px; position: relative;
         }
         .portal-hero::after {
-            background: radial-gradient(circle, rgba(199,53,74,.12), transparent 66%); content: "";
+            background: radial-gradient(circle, rgba(220,25,37,.14), transparent 66%); content: "";
             height: 330px; position: absolute; right: -80px; top: -145px; width: 330px;
         }
         .portal-hero__copy { position: relative; z-index: 1; }
-        .portal-hero__eyebrow { color: var(--blue); font-size: .72rem; font-weight: 900; letter-spacing: .15em; }
+        .portal-hero__eyebrow { color: var(--red); font-size: .72rem; font-weight: 900; letter-spacing: .15em; }
         .portal-hero h1 { font-size: 3.1rem !important; line-height: 1.1; margin: 9px 0 13px; max-width: 720px; }
         .portal-hero p { color: #525D71; font-size: 1rem; margin: 0; max-width: 680px; }
         .portal-hero__facts { align-content: center; display: grid; gap: 9px; position: relative; z-index: 1; }
@@ -140,7 +140,7 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             display: flex; justify-content: space-between; padding: 11px 13px;
         }
         .portal-fact span { color: #697386; font-size: .75rem; }
-        .portal-fact strong { color: #243A70; font-size: .82rem; }
+        .portal-fact strong { color: #033066; font-size: .82rem; }
         .portal-section-heading { align-items: flex-end; display: flex; justify-content: space-between; margin: 29px 2px 12px; }
         .portal-section-heading strong { color: var(--ink); font-size: 1.22rem; }
         .portal-section-heading span { color: var(--muted); font-size: .78rem; }
@@ -154,13 +154,13 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             box-shadow: 0 15px 34px rgba(17,28,66,.085); transform: translateY(-2px);
         }
         .st-key-home_portal_steps div.stButton > button:focus-visible {
-            outline: 3px solid rgba(36,58,143,.25); outline-offset: 3px;
+            outline: 3px solid rgba(3,73,146,.25); outline-offset: 3px;
         }
         .st-key-home_portal_steps div.stButton > button p {
             color: var(--muted); font-size: .86rem; line-height: 1.65; text-align: left; white-space: pre-line;
         }
         .st-key-home_portal_steps div.stButton > button strong { color: var(--ink); font-size: 1rem; }
-        .page-kicker { color: #C7354A; font-weight: 900; letter-spacing: .14em; font-size: .73rem; }
+        .page-kicker { color: var(--red); font-weight: 900; letter-spacing: .14em; font-size: .73rem; }
         .page-lead { color: var(--muted); margin-top: -.5rem; margin-bottom: 1.55rem; }
         .panel {
             background: white;
@@ -170,8 +170,8 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             box-shadow: 0 12px 34px rgba(17, 28, 66, .055);
         }
         .input-guide {
-            background: linear-gradient(90deg, rgba(36, 58, 143, .07), rgba(199, 53, 74, .025));
-            border: 1px solid rgba(36, 58, 143, .14);
+            background: linear-gradient(90deg, rgba(3, 73, 146, .08), rgba(220, 25, 37, .035));
+            border: 1px solid rgba(3, 73, 146, .16);
             border-radius: 14px;
             display: grid;
             gap: 3px;
@@ -247,14 +247,14 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             grid-template-columns: 28px minmax(100px, .8fr) minmax(140px, 1.2fr);
         }
         .layer-stack__number {
-            align-items: center; background: #243A70; border-radius: 50%; color: #FFFFFF;
+            align-items: center; background: #033066; border-radius: 50%; color: #FFFFFF;
             display: inline-flex; font-size: .68rem; font-weight: 900; height: 26px; justify-content: center; width: 26px;
         }
         .layer-stack__slab {
-            border: 1px solid rgba(36, 58, 143, .2); border-radius: 7px; box-shadow: 0 7px 12px rgba(36, 58, 143, .1);
+            border: 1px solid rgba(3, 73, 146, .22); border-radius: 7px; box-shadow: 0 7px 12px rgba(3, 73, 146, .12);
             height: 30px; transform: skewX(-10deg);
         }
-        .layer-stack__item:nth-child(1) .layer-stack__slab { background: linear-gradient(135deg, #3F5FB7, #A7B7DD); }
+        .layer-stack__item:nth-child(1) .layer-stack__slab { background: linear-gradient(135deg, #034992, #72B4EA); }
         .layer-stack__item:nth-child(2) .layer-stack__slab { background: linear-gradient(135deg, #9E8A6C, #D8C9B3); }
         .layer-stack__item:nth-child(3) .layer-stack__slab { background: linear-gradient(135deg, #7485A9, #C0CBE0); }
         .layer-stack__item:nth-child(4) .layer-stack__slab { background: linear-gradient(135deg, #4774AA, #A7C6E7); }
@@ -283,8 +283,8 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
         .timeline-cell span { color: var(--muted); display: block; font-size: .68rem; font-weight: 800; margin-bottom: 5px; }
         .timeline-cell strong { color: #26314B; display: block; font-size: .78rem; line-height: 1.45; overflow-wrap: anywhere; }
         .snapshot-banner {
-            align-items: center; background: linear-gradient(120deg, #17285F, #243A8F 62%, #3F5FB7);
-            border-left: 4px solid #C7354A;
+            align-items: center; background: linear-gradient(120deg, #011F46, #033066 58%, #034992);
+            border-left: 4px solid #DC1925;
             border-radius: 18px; color: #FFFFFF; display: flex; justify-content: space-between;
             margin: 8px 0 16px; padding: 18px 20px;
         }
@@ -380,13 +380,14 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
         .completion-box strong { line-height: 1.6; }
         .score-number { color: var(--blue); font-size: 3rem; line-height: 1; font-weight: 900; }
         .score-total { color: var(--muted); font-size: 1rem; }
-        .sidebar-brand { padding: .45rem 0 1.3rem; border-bottom: 1px solid var(--line); margin-bottom: 1rem; display: flex; align-items: center; gap: .75rem; }
-        .brand-mark {
-            width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
-            border-radius: 50%; background: var(--blue); color: white !important; font-size: .75rem; font-weight: 900; letter-spacing: -.03em;
+        .sidebar-brand {
+            align-items: center; border-bottom: 1px solid var(--line); display: flex;
+            margin-bottom: 1rem; padding: .35rem 0 1.15rem;
         }
-        .sidebar-brand strong { color: var(--ink); font-size: 1.12rem; letter-spacing: -.025em; }
-        .sidebar-brand small { color: #777B84; display: block; margin-top: .1rem; font-size: .67rem; letter-spacing: .06em; }
+        .sidebar-brand__logo {
+            display: block; height: auto; max-width: 218px; object-fit: contain;
+            object-position: left center; width: 100%;
+        }
         .footer-note { color: #7B8794; font-size: .78rem; border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 2rem; }
         [data-testid="stAlert"] { border-radius: 16px; }
         @media (max-width: 900px) {
@@ -407,6 +408,7 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
             .snapshot-banner { align-items: flex-start; flex-direction: column; gap: 10px; }
             .snapshot-banner__meta { text-align: left; }
             .portal-header { align-items: flex-start; flex-direction: column; gap: 9px; }
+            .portal-brand__logo { height: 58px; max-width: min(245px, 80vw); }
             .portal-nav { justify-content: flex-start; }
             .portal-nav span { padding: 6px 8px; }
             .portal-hero { border-radius: 22px; padding: 28px 22px; }
@@ -436,15 +438,13 @@ def setup_page(title: str, *, sidebar_state: str = "expanded") -> None:
 
 def render_sidebar() -> None:
     """기본 Streamlit 메뉴 대신 서비스 전용 탐색 메뉴를 표시한다."""
+    logo_uri = brand_logo_data_uri()
     with st.sidebar:
         st.markdown(
-            """
+            f"""
             <div class="sidebar-brand">
-                <span class="brand-mark">TR</span>
-                <span>
-                    <strong>TexReg Insight</strong>
-                    <small>GLOBAL COMPLIANCE</small>
-                </span>
+                <img class="sidebar-brand__logo" src="{logo_uri}"
+                     alt="TexReg Insight · Textile Regulation Portal">
             </div>
             """,
             unsafe_allow_html=True,
@@ -459,15 +459,13 @@ def render_sidebar() -> None:
 
 def render_portal_header() -> None:
     """홈 화면 상단에 서비스 정체성과 주요 영역을 안내한다."""
+    logo_uri = brand_logo_data_uri()
     st.markdown(
-        """
+        f"""
         <header class="portal-header">
             <div class="portal-brand">
-                <span class="portal-brand__mark">TR</span>
-                <span>
-                    <strong>TexReg Insight</strong>
-                    <small>TEXTILE REGULATION PORTAL</small>
-                </span>
+                <img class="portal-brand__logo" src="{logo_uri}"
+                     alt="TexReg Insight · Textile Regulation Portal">
             </div>
             <nav class="portal-nav" aria-label="서비스 주요 영역">
                 <span>제품 정보</span>

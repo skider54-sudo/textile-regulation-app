@@ -36,7 +36,7 @@ def inject_archive_styles() -> None:
         }
         .archive-step__arrow { color: #C7CED9; font-size: 1.15rem; }
         .archive-step--active { background: #F4F6FB; }
-        .archive-step--active .archive-step__number { background: #243A8F; color: #FFFFFF; }
+        .archive-step--active .archive-step__number { background: #034992; color: #FFFFFF; }
         .archive-step--active strong { color: #101828; }
         .archive-step--complete .archive-step__number { background: #EAF7F2; color: #087453; }
         .archive-step--complete strong { color: #426257; }
@@ -67,11 +67,11 @@ def inject_archive_styles() -> None:
             padding: 17px 19px; position: relative;
         }
         .archive-metric__icon {
-            align-items: center; background: #EEF2FA; border-radius: 10px; color: #3F5FB7;
+            align-items: center; background: #E7F1FA; border-radius: 10px; color: #034992;
             display: inline-flex; font-size: .82rem; font-weight: 900; height: 34px;
             justify-content: center; position: absolute; right: 16px; top: 16px; width: 34px;
         }
-        .archive-metric:nth-child(3) .archive-metric__icon { background: #FCF0F2; color: #C7354A; }
+        .archive-metric:nth-child(3) .archive-metric__icon { background: #FFF0F1; color: #DC1925; }
         .archive-metric > span:not(.archive-metric__icon) {
             color: #718096; display: block; font-size: .76rem;
         }
@@ -95,19 +95,19 @@ def inject_archive_styles() -> None:
             margin-top: 13px;
         }
         .archive-guide__number {
-            align-items: center; background: #EEF2FA; border-radius: 50%; color: #243A8F;
+            align-items: center; background: #E7F1FA; border-radius: 50%; color: #034992;
             display: inline-flex; font-size: .68rem; font-weight: 900; height: 25px;
             justify-content: center; width: 25px;
         }
         .archive-guide__item strong { color: #344054; display: block; font-size: .78rem; }
         .archive-guide__item small { color: #7D899B; display: block; font-size: .68rem; line-height: 1.5; margin-top: 2px; }
         .archive-reading-note {
-            background: #F1F4FA; border: 1px solid #D8DFEC; border-radius: 16px;
+            background: #EEF5FB; border: 1px solid #D5E2EF; border-radius: 16px;
             color: #445273; font-size: .72rem; line-height: 1.65; padding: 14px 15px;
         }
         .archive-reading-note strong { display: block; margin-bottom: 4px; }
         .archive-storage {
-            background: linear-gradient(135deg,#F9FAFD,#F1F4FA); border: 1px solid #DDE3EF;
+            background: linear-gradient(135deg,#F8FBFD,#EEF5FB); border: 1px solid #D5E2EF;
             border-radius: 18px; display: grid; gap: 12px;
             grid-template-columns: repeat(3,minmax(0,1fr)); margin: 14px 0 16px;
             padding: 16px;

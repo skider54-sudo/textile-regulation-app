@@ -32,6 +32,9 @@ class PortalWorkflowTest(unittest.TestCase):
         self.assertEqual(len(app.exception), 0)
         markdown = "\n".join(element.value for element in app.markdown)
         self.assertIn('class="portal-header"', markdown)
+        self.assertIn('class="portal-brand__logo"', markdown)
+        self.assertIn('class="sidebar-brand__logo"', markdown)
+        self.assertIn("data:image/png;base64,", markdown)
         self.assertIn('class="portal-hero"', markdown)
 
         labels = [button.label for button in app.button]

@@ -10,6 +10,8 @@ from html import escape
 
 import streamlit as st
 
+from texreg_core.brand_assets import brand_logo_data_uri
+
 
 def inject_portal_styles() -> None:
     """포털 홈, 진행 단계, 위험 알림에 필요한 추가 스타일을 삽입한다."""
@@ -24,19 +26,12 @@ def inject_portal_styles() -> None:
             padding: 13px 18px;
         }
         .portal-brand {
-            align-items: center; color: var(--ink, #101114) !important;
-            display: flex; gap: 11px; text-decoration: none !important;
+            align-items: center; display: flex; flex: 0 1 auto;
+            min-width: 220px; text-decoration: none !important;
         }
-        .portal-brand__mark {
-            align-items: center; background: linear-gradient(145deg, #C7354A 0%, #C7354A 42%, #3F5FB7 58%, #243A8F 100%);
-            border-radius: 11px; color: #FFFFFF; display: inline-flex;
-            font-size: .72rem; font-weight: 900; height: 38px; justify-content: center;
-            letter-spacing: -.02em; width: 38px;
-        }
-        .portal-brand strong { display: block; font-size: 1rem; letter-spacing: -.025em; }
-        .portal-brand small {
-            color: #7B8495; display: block; font-size: .64rem;
-            letter-spacing: .08em; margin-top: 1px;
+        .portal-brand__logo {
+            display: block; height: 64px; max-width: min(270px, 34vw);
+            object-fit: contain; object-position: left center; width: auto;
         }
         .portal-nav {
             align-items: center; display: flex; flex-wrap: wrap; gap: 5px;
@@ -47,20 +42,20 @@ def inject_portal_styles() -> None:
             font-weight: 750; padding: 8px 11px; text-decoration: none !important;
         }
         .portal-hero {
-            background: linear-gradient(128deg, #FBFCFF 0%, #F0F3FA 58%, #F8EFF2 100%);
-            border: 1px solid #DCE2EE; border-radius: 27px;
-            box-shadow: 0 18px 50px rgba(17,28,66,.075); display: grid; gap: 34px;
+            background: linear-gradient(128deg, #FBFDFF 0%, #EAF3FB 58%, #FFF1F2 100%);
+            border: 1px solid #D5E2EF; border-radius: 27px;
+            box-shadow: 0 18px 50px rgba(1,31,70,.09); display: grid; gap: 34px;
             grid-template-columns: minmax(0,1.5fr) minmax(260px,.7fr);
             margin-bottom: 18px; overflow: hidden; padding: 42px 46px; position: relative;
         }
         .portal-hero::after {
-            background: radial-gradient(circle, rgba(199,53,74,.12), transparent 66%);
+            background: radial-gradient(circle, rgba(220,25,37,.14), transparent 66%);
             content: ""; height: 330px; position: absolute; right: -80px;
             top: -145px; width: 330px;
         }
         .portal-hero__copy { position: relative; z-index: 1; }
         .portal-hero__eyebrow {
-            color: #C7354A; font-size: .72rem; font-weight: 900;
+            color: #DC1925; font-size: .72rem; font-weight: 900;
             letter-spacing: .15em;
         }
         .portal-hero h1 {
@@ -77,36 +72,36 @@ def inject_portal_styles() -> None:
             padding: 11px 13px;
         }
         .portal-fact span { color: #697386; font-size: .75rem; }
-        .portal-fact strong { color: #243A70; font-size: .82rem; }
+        .portal-fact strong { color: #033066; font-size: .82rem; }
         .portal-section-heading {
             align-items: flex-end; display: flex; justify-content: space-between;
             margin: 29px 2px 12px;
         }
         .portal-section-heading strong {
-            color: var(--ink, #101114); font-size: 1.22rem;
+            color: var(--ink, #07192F); font-size: 1.22rem;
         }
         .portal-section-heading span { color: var(--muted, #64676D); font-size: .78rem; }
         .st-key-home_portal_steps div.stButton > button {
             align-items: flex-start; background: #FFFFFF;
             border: 1px solid var(--line, #E6E8EC); border-radius: 18px;
             box-shadow: 0 10px 28px rgba(17,28,66,.045);
-            color: var(--ink, #101114); justify-content: flex-start; font-weight: 600;
+            color: var(--ink, #07192F); justify-content: flex-start; font-weight: 600;
             min-height: 142px; padding: 20px; text-align: left; width: 100%;
         }
         .st-key-home_portal_steps div.stButton > button:hover {
-            background: #F5F7FC; border-color: #BCC9E3;
-            color: var(--blue, #243A8F); box-shadow: 0 15px 34px rgba(17,28,66,.085);
+            background: #F2F7FC; border-color: #9DC3E5;
+            color: var(--blue, #034992); box-shadow: 0 15px 34px rgba(1,31,70,.095);
             transform: translateY(-2px);
         }
         .st-key-home_portal_steps div.stButton > button:focus-visible {
-            outline: 3px solid rgba(36,58,143,.25); outline-offset: 3px;
+            outline: 3px solid rgba(3,73,146,.25); outline-offset: 3px;
         }
         .st-key-home_portal_steps div.stButton > button p {
             color: var(--muted, #64676D); font-size: .86rem; line-height: 1.65;
             text-align: left; white-space: pre-line;
         }
         .st-key-home_portal_steps div.stButton > button strong {
-            color: var(--ink, #101114); font-size: 1rem;
+            color: var(--ink, #07192F); font-size: 1rem;
         }
         .workflow-steps {
             background: #FFFFFF; border: 1px solid #DEE3ED; border-radius: 18px;
@@ -135,9 +130,9 @@ def inject_portal_styles() -> None:
         .workflow-step__arrow { color: #C7CED9; font-size: 1.2rem; }
         .workflow-step--active { background: #F4F6FB; }
         .workflow-step--active .workflow-step__number {
-            background: var(--blue, #243A8F); color: #FFFFFF;
+            background: var(--blue, #034992); color: #FFFFFF;
         }
-        .workflow-step--active strong { color: var(--ink, #101114); }
+        .workflow-step--active strong { color: var(--ink, #07192F); }
         .workflow-step--complete .workflow-step__number {
             background: #EAF7F2; color: #087453;
         }
@@ -177,6 +172,8 @@ def inject_portal_styles() -> None:
         }
         @media (max-width: 700px) {
             .portal-header { align-items: flex-start; flex-direction: column; gap: 9px; }
+            .portal-brand { min-width: 0; }
+            .portal-brand__logo { height: 58px; max-width: min(245px, 80vw); }
             .portal-nav { justify-content: flex-start; }
             .portal-nav span { padding: 6px 8px; }
             .portal-hero { border-radius: 22px; padding: 28px 22px; }
@@ -203,15 +200,13 @@ def inject_portal_styles() -> None:
 
 def render_portal_header() -> None:
     """홈 화면 상단에 서비스 정체성과 주요 영역을 안내한다."""
+    logo_uri = brand_logo_data_uri()
     st.markdown(
-        """
+        f"""
         <header class="portal-header">
             <div class="portal-brand">
-                <span class="portal-brand__mark">TR</span>
-                <span>
-                    <strong>TexReg Insight</strong>
-                    <small>TEXTILE REGULATION PORTAL</small>
-                </span>
+                <img class="portal-brand__logo" src="{logo_uri}"
+                     alt="TexReg Insight · Textile Regulation Portal">
             </div>
             <nav class="portal-nav" aria-label="서비스 주요 영역">
                 <span>제품 정보</span>

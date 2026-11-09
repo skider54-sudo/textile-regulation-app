@@ -703,7 +703,7 @@ with portfolio_tab:
                 y="규제명",
                 orientation="h",
                 text="영향 제품 수",
-                color_discrete_sequence=["#243A8F"],
+                color_discrete_sequence=["#034992"],
             )
             impact_chart.update_layout(
                 height=max(320, len(impact_frame) * 46),
