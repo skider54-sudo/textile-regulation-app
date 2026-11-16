@@ -209,6 +209,72 @@ class PdfReaderTests(unittest.TestCase):
         self.assertIn("PTFE/ePTFE 멤브레인", insights.membranes)
         self.assertIn("DWR 발수 가공", insights.finishings)
 
+    def test_tds_multiline_name_supplier_and_performance_specs_are_structured(self) -> None:
+        document = PdfDocument(
+            page_count=1,
+            page_texts=((
+                "Lean Textile Co., Limited\n"
+                "Address: Nanma Economic Development Zone, Jiangsu,\n"
+                "China. Post code: 215228\n"
+                "Email: haiming@leantex.com Mobile: 008615051486055\n"
+                "Website: https://www.leantex.com\n"
+                "Technical Data Sheet\n"
+                "Item Name: Nylon 1000D Cordura Fabric Waterproof Flame Retardant Pu\n"
+                "Coating CPAI-84\n"
+                "Material: 100% Nylon\n"
+                "Weight: 370 GSM +-5%\n"
+                "Style: Woven 1/1\n"
+                "Tensile Strength: Warp: 2200 N, Weft: 1600 N\n"
+                "Tear Strength: Warp>64 N, Weft: >64 N\n"
+                "Color Fastnesst to Rubbin Dry: 3-4, Wet: 3-4\n"
+                "Color Fastnesst to Washing 3-4\n"
+                "Color Fastnesst to Light 4\n"
+                "Washing size change 3%\n"
+                "Spary Test: Grade 3-4\n"
+                "Abrasion Resistance / Cycles >100,000 Cycles\n"
+                "Finishing W/R, PU Coating\n"
+                "Water Column: 800mm, Flame Retardant CPAI-84\n"
+                "https://www.leantex.com/products/nylon-1000d"
+            ),),
+        )
+
+        insights = analyze_pdf_document(document, "example-1.pdf")
+        supplier = {field.label: field.value for field in insights.supplier_details}
+        specs = {field.label: field.value for field in insights.technical_specs}
+
+        self.assertEqual(
+            insights.product_name,
+            "Nylon 1000D Cordura Fabric Waterproof Flame Retardant Pu Coating CPAI-84",
+        )
+        self.assertEqual(
+            [(candidate.name, candidate.ratio) for candidate in insights.materials],
+            [("Nylon", 100.0)],
+        )
+        self.assertEqual(supplier["공급업체"], "Lean Textile Co., Limited")
+        self.assertIn("China. Post code: 215228", supplier["주소"])
+        self.assertEqual(supplier["이메일"], "haiming@leantex.com")
+        self.assertEqual(supplier["연락처"], "008615051486055")
+        self.assertEqual(supplier["웹사이트"], "https://www.leantex.com")
+        self.assertEqual(
+            supplier["제품 링크"],
+            "https://www.leantex.com/products/nylon-1000d",
+        )
+        self.assertEqual(specs["중량"], "370 GSM +-5%")
+        self.assertEqual(specs["조직·스타일"], "Woven 1/1")
+        self.assertEqual(specs["인장강도"], "Warp: 2200 N, Weft: 1600 N")
+        self.assertEqual(specs["인열강도"], "Warp>64 N, Weft: >64 N")
+        self.assertEqual(specs["마찰 견뢰도"], "Dry: 3-4, Wet: 3-4")
+        self.assertEqual(specs["세탁 견뢰도"], "3-4")
+        self.assertEqual(specs["일광 견뢰도"], "4")
+        self.assertEqual(specs["치수변화율"], "3%")
+        self.assertEqual(specs["발수도"], "Grade 3-4")
+        self.assertEqual(specs["마모저항"], ">100,000 Cycles")
+        self.assertEqual(specs["후가공"], "W/R, PU Coating")
+        self.assertEqual(specs["내수압"], "800mm")
+        self.assertEqual(specs["난연 기준"], "CPAI-84")
+        self.assertIn("DWR 발수 가공", insights.finishings)
+        self.assertIn("발수", insights.processes)
+
     def test_pfas_free_and_eptfe_are_reported_as_conflicting(self) -> None:
         document = PdfDocument(
             page_count=1,

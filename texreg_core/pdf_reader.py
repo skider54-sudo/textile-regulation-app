@@ -60,6 +60,15 @@ class MaterialCandidate:
 
 
 @dataclass(frozen=True)
+class ExtractedField:
+    """PDF에서 구조화한 문서 정보 또는 기술 사양 한 항목."""
+
+    label: str
+    value: str
+    page: int
+
+
+@dataclass(frozen=True)
 class PdfInsights:
     """현재 제품 입력 화면에 연결할 수 있는 PDF 분석 결과."""
 
@@ -78,6 +87,8 @@ class PdfInsights:
     cas_numbers: tuple[str, ...] = ()
     pfas_status: str = "미확인"
     detected_terms: tuple[str, ...] = ()
+    supplier_details: tuple[ExtractedField, ...] = ()
+    technical_specs: tuple[ExtractedField, ...] = ()
     warnings: tuple[str, ...] = ()
 
     @property
@@ -165,6 +176,40 @@ _MATERIAL_CONTEXT = re.compile(
 _DOCUMENT_LABELS = re.compile(
     r"(?:product\s*(?:name|identifier)|trade\s*name|item\s*name|article\s*name|"
     r"model(?:\s*name)?|style(?:\s*name)?|제품명|품명|모델명)\s*[:：\-]?\s*(.+)",
+    re.IGNORECASE,
+)
+
+_NAME_CONTINUATION_STOP = re.compile(
+    r"^(?:(?:product|trade|item|article|model|style)\s*(?:name|identifier)?|"
+    r"material|fiber\s*content|fibre\s*content|composition|weight|grammage|"
+    r"style|construction|tensile\s+strength|tear\s+strength|colou?r\s+fast|"
+    r"washing\s+size|dimensional\s+change|shrinkage|sp(?:ray|ary)\s+test|"
+    r"abrasion|finish(?:ing|ings)|water\s+column|hydrostatic|"
+    r"address|email|mobile|phone|website|section\s*\d+|technical\s+data\s+sheet|"
+    r"safety\s+data\s+sheet|제품명|품명|모델명|소재|재질|혼용률|중량|평량|"
+    r"조직|인장|인열|견뢰도|치수|수축|발수도|마모|후가공|내수압|주소|연락처|웹사이트)\b|"
+    r"^https?://",
+    re.IGNORECASE,
+)
+
+_TECHNICAL_SPEC_PATTERNS: tuple[tuple[str, str], ...] = (
+    ("중량", r"(?:fabric\s+)?weight\b|grammage\b|중량|평량"),
+    ("조직·스타일", r"style\b|weave\b|fabric\s+construction\b|조직|직물\s*구조"),
+    ("인장강도", r"tensile\s+strength\b|인장\s*강도"),
+    ("인열강도", r"tear\s+strength\b|인열\s*강도"),
+    ("마찰 견뢰도", r"colou?r\s+fast\w*\s+to\s+rubb\w*|마찰\s*견뢰도"),
+    ("세탁 견뢰도", r"colou?r\s+fast\w*\s+to\s+wash\w*|세탁\s*견뢰도"),
+    ("일광 견뢰도", r"colou?r\s+fast\w*\s+to\s+light\w*|일광\s*견뢰도"),
+    ("치수변화율", r"washing\s+size\s+change\b|dimensional\s+change\b|shrinkage\b|치수\s*변화|수축률"),
+    ("발수도", r"sp(?:ray|ary)\s+test\b|water\s+repellency\b|발수도|스프레이\s*시험"),
+    ("마모저항", r"abrasion\s+resistance(?:\s*/\s*cycles)?\b|abrasion\s+cycles?\b|마모\s*(?:저항|강도)"),
+    ("후가공", r"finish(?:ing|ings|treatment)\b|후가공"),
+    ("내수압", r"water\s+column\b|hydrostatic\s+(?:head|pressure)\b|내수압"),
+)
+
+_FLAME_STANDARD_PATTERN = re.compile(
+    r"\b(?:CPAI[-\s]?84|NFPA\s*701|ASTM\s*D\s*6413|"
+    r"EN\s*ISO\s*(?:15025|14116|11612)|BS\s*5852|DIN\s*4102)\b",
     re.IGNORECASE,
 )
 
@@ -404,6 +449,18 @@ def _candidate_name(
     filename: str,
     chemical_document: bool,
 ) -> tuple[str, str]:
+    def joined_value(lines: list[str], value_index: int, initial: str) -> str:
+        parts = [initial.strip(" :：-|/")]
+        for following in lines[value_index + 1 : value_index + 3]:
+            following = following.strip()
+            if not following or _NAME_CONTINUATION_STOP.search(following):
+                break
+            combined = " ".join([*parts, following]).strip()
+            if len(combined) > 160:
+                break
+            parts.append(following)
+        return re.sub(r"\s+", " ", " ".join(parts)).strip()
+
     candidates: list[str] = []
     for page_text in document.page_texts[:3]:
         lines = page_text.splitlines()
@@ -412,13 +469,13 @@ def _candidate_name(
             if match:
                 value = match.group(1).strip(" :：-|/")
                 if value:
-                    candidates.append(value)
+                    candidates.append(joined_value(lines, index, value))
             elif re.fullmatch(
                 r"product\s*(?:name|identifier)|trade\s*name|제품명|품명",
                 line.strip(),
                 re.I,
             ) and index + 1 < len(lines):
-                candidates.append(lines[index + 1].strip())
+                candidates.append(joined_value(lines, index + 1, lines[index + 1]))
 
     if document.title:
         candidates.append(document.title)
@@ -446,6 +503,130 @@ def _candidate_name(
         "",
     )
     return ("", name) if chemical_document else (name, "")
+
+
+def _supplier_details(document: PdfDocument) -> tuple[ExtractedField, ...]:
+    """문서 상단의 공급업체·연락처와 제품 링크를 구조화한다."""
+    found: dict[str, ExtractedField] = {}
+    all_urls: list[tuple[str, int]] = []
+
+    for page_number, page_text in enumerate(document.page_texts, start=1):
+        lines = page_text.splitlines()
+        for index, line in enumerate(lines):
+            if page_number <= 2 and index < 20 and "공급업체" not in found:
+                company_match = re.search(
+                    r"\b(?:Co\.?\s*,?\s*(?:Ltd\.?|Limited)|Ltd\.?|Inc\.?|"
+                    r"Corporation|Company)\b",
+                    line,
+                    re.I,
+                )
+                if company_match and not re.match(r"\s*(?:address|email|website)\b", line, re.I):
+                    found["공급업체"] = ExtractedField("공급업체", line.strip(), page_number)
+
+            address_match = re.match(r"\s*(?:address|주소)\s*[:：]\s*(.+)", line, re.I)
+            if address_match and "주소" not in found:
+                address_parts = [address_match.group(1).strip()]
+                for following in lines[index + 1 : index + 4]:
+                    if re.match(
+                        r"\s*(?:email|e-mail|mobile|phone|tel|website|technical\s+data\s+sheet|"
+                        r"safety\s+data\s+sheet)\b",
+                        following,
+                        re.I,
+                    ):
+                        break
+                    address_parts.append(following.strip())
+                found["주소"] = ExtractedField(
+                    "주소",
+                    re.sub(r"\s+", " ", " ".join(address_parts)).strip(),
+                    page_number,
+                )
+
+            email_match = re.search(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b", line)
+            if email_match and "이메일" not in found:
+                found["이메일"] = ExtractedField("이메일", email_match.group(0), page_number)
+
+            phone_match = re.search(
+                r"(?:mobile|phone|tel(?:ephone)?|연락처)\s*[:：]\s*([+()\d][+()\d\s.-]{6,})",
+                line,
+                re.I,
+            )
+            if phone_match and "연락처" not in found:
+                found["연락처"] = ExtractedField(
+                    "연락처", phone_match.group(1).strip(), page_number
+                )
+
+            for url_match in re.finditer(r"https?://[^\s<>]+", line, re.I):
+                all_urls.append((url_match.group(0).rstrip(".,);]"), page_number))
+
+    if all_urls:
+        website_url, website_page = all_urls[0]
+        found["웹사이트"] = ExtractedField("웹사이트", website_url, website_page)
+        product_urls = [item for item in all_urls[1:] if item[0].rstrip("/") != website_url.rstrip("/")]
+        if product_urls:
+            product_url, product_page = max(product_urls, key=lambda item: len(item[0]))
+            found["제품 링크"] = ExtractedField("제품 링크", product_url, product_page)
+
+    ordered_labels = ("공급업체", "주소", "이메일", "연락처", "웹사이트", "제품 링크")
+    return tuple(found[label] for label in ordered_labels if label in found)
+
+
+def _technical_specs(document: PdfDocument) -> tuple[ExtractedField, ...]:
+    """TDS 표의 성능·시험 사양을 알려진 항목별로 구조화한다."""
+    found: dict[str, ExtractedField] = {}
+    for page_number, page_text in enumerate(document.page_texts, start=1):
+        lines = page_text.splitlines()
+        for index, line in enumerate(lines):
+            for label, pattern in _TECHNICAL_SPEC_PATTERNS:
+                if label in found:
+                    continue
+                value_match = re.match(
+                    rf"^\s*(?:{pattern})\s*(?:[:：-]\s*)?(?P<value>.+?)\s*$",
+                    line,
+                    re.I,
+                )
+                value = value_match.group("value").strip() if value_match else ""
+                if not value and re.fullmatch(
+                    rf"\s*(?:{pattern})\s*[:：-]?\s*",
+                    line,
+                    re.I,
+                ) and index + 1 < len(lines):
+                    following = lines[index + 1].strip()
+                    if following and not _NAME_CONTINUATION_STOP.search(following):
+                        value = following
+                if not value:
+                    continue
+                if label == "내수압":
+                    value = re.split(
+                        r",?\s*(?:flame|fire)\s+retardant\b",
+                        value,
+                        maxsplit=1,
+                        flags=re.I,
+                    )[0].strip(" ,")
+                if value:
+                    found[label] = ExtractedField(
+                        label,
+                        re.sub(r"\s+", " ", value).strip()[:240],
+                        page_number,
+                    )
+
+    standard_match = _FLAME_STANDARD_PATTERN.search(document.text)
+    if standard_match:
+        page_number = next(
+            (
+                index
+                for index, page_text in enumerate(document.page_texts, start=1)
+                if standard_match.group(0).lower() in page_text.lower()
+            ),
+            1,
+        )
+        found["난연 기준"] = ExtractedField(
+            "난연 기준",
+            re.sub(r"\s+", " ", standard_match.group(0)).upper(),
+            page_number,
+        )
+
+    ordered_labels = tuple(label for label, _ in _TECHNICAL_SPEC_PATTERNS) + ("난연 기준",)
+    return tuple(found[label] for label in ordered_labels if label in found)
 
 
 def _find_ratio(line: str, alias_pattern: str) -> tuple[float | None, int]:
@@ -692,6 +873,8 @@ def analyze_pdf_document(document: PdfDocument, filename: str = "document.pdf") 
     chemical_document = _is_chemical_document(text, document_types)
     product_name, trade_name = _candidate_name(document, filename, chemical_document)
     materials = _materials(document, chemical_document)
+    supplier_details = _supplier_details(document)
+    technical_specs = _technical_specs(document) if "TDS" in document_types else ()
     test_report_only = (
         "시험성적서" in document_types
         and not any(kind in document_types for kind in ("SDS", "TDS", "제품 사양서"))
@@ -739,7 +922,7 @@ def analyze_pdf_document(document: PdfDocument, filename: str = "document.pdf") 
     finishings = _mapped_values(
         text,
         (
-            ("DWR 발수 가공", r"\bDWR\b|durable\s+water\s+repellent|발수\s*가공"),
+            ("DWR 발수 가공", r"\bDWR\b|\bW\s*/\s*R\b|durable\s+water\s+repellent|발수\s*가공"),
             ("방오 가공", r"stain\s+repellent|soil\s+repellent|방오\s*가공"),
             ("난연 가공", r"flame\s+retardant|fire\s+retardant|난연\s*가공"),
             ("항균 가공", r"antimicrobial|antibacterial|항균\s*가공"),
@@ -757,7 +940,7 @@ def analyze_pdf_document(document: PdfDocument, filename: str = "document.pdf") 
             ("봉제", r"\bsew(?:n|ing)?\b|stitched|cut[\s-]*and[\s-]*sew|봉제"),
             ("염색", r"\bdye(?:d|ing)?\b|염색"),
             ("프린팅", r"screen\s+print|heat\s+transfer|sublimation|\bprinting?\b|프린팅|날염"),
-            ("발수", r"\bDWR\b|durable\s+water\s+repellent|발수"),
+            ("발수", r"\bDWR\b|\bW\s*/\s*R\b|durable\s+water\s+repellent|발수"),
             ("방수", r"waterproof(?:ing)?|방수"),
             ("PU 코팅", r"(?:\bPU\b|polyurethane).{0,20}coat(?:ed|ing)|PU\s*코팅"),
             ("코팅", r"\bcoat(?:ed|ing)\b|코팅"),
@@ -837,6 +1020,8 @@ def analyze_pdf_document(document: PdfDocument, filename: str = "document.pdf") 
         cas_numbers=cas_numbers,
         pfas_status=pfas_status,
         detected_terms=detected_terms,
+        supplier_details=supplier_details,
+        technical_specs=technical_specs,
         warnings=_unique(warnings),
     )
 

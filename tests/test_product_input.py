@@ -210,6 +210,40 @@ class ProductInputTest(unittest.TestCase):
         self.assertEqual(app.session_state["chemicals"], ["기타"])
         self.assertIn("NeutralSoft X", app.session_state["custom_chemical"])
 
+    def test_tds_upload_displays_structured_performance_table(self) -> None:
+        app = self._open_input_page()
+        pdf_bytes = _text_pdf(
+            [
+                "Technical Data Sheet",
+                "Item Name: Nylon 1000D Cordura Fabric Waterproof Flame Retardant Pu",
+                "Coating CPAI-84",
+                "Material: 100% Nylon",
+                "Weight: 370 GSM +-5%",
+                "Style: Woven 1/1",
+                "Tensile Strength: Warp: 2200 N, Weft: 1600 N",
+                "Tear Strength: Warp>64 N, Weft: >64 N",
+                "Spary Test: Grade 3-4",
+                "Abrasion Resistance / Cycles >100,000 Cycles",
+                "Finishing W/R, PU Coating",
+                "Water Column: 800mm, Flame Retardant CPAI-84",
+            ]
+        )
+
+        _by_label(app.file_uploader, "제품 문서 PDF").set_value(
+            ("example-1.pdf", pdf_bytes, "application/pdf")
+        )
+        app.run(timeout=30)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertTrue(any(element.label == "TDS 상세 사양" for element in app.expander))
+        self.assertEqual(len(app.dataframe), 1)
+        table = app.dataframe[0].value
+        spec_values = dict(zip(table["항목"], table["감지값"]))
+        self.assertEqual(spec_values["중량"], "370 GSM +-5%")
+        self.assertEqual(spec_values["인장강도"], "Warp: 2200 N, Weft: 1600 N")
+        self.assertEqual(spec_values["내수압"], "800mm")
+        self.assertEqual(spec_values["난연 기준"], "CPAI-84")
+
     def test_composition_total_must_be_100_percent(self) -> None:
         app = self._open_input_page()
 

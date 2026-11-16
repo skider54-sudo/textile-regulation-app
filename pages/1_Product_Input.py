@@ -375,6 +375,40 @@ with st.container(border=True):
                 if insights.warnings:
                     st.warning("\n".join(f"• {message}" for message in insights.warnings))
 
+                detail_fields = [
+                    *(('문서·공급업체', field) for field in insights.supplier_details),
+                    *(('기술 사양', field) for field in insights.technical_specs),
+                ]
+                if detail_fields:
+                    detail_title = (
+                        "TDS 상세 사양"
+                        if "TDS" in insights.document_types
+                        else "PDF 상세 정보"
+                    )
+                    with st.expander(detail_title, expanded=True):
+                        st.dataframe(
+                            [
+                                {
+                                    "구분": category,
+                                    "항목": field.label,
+                                    "감지값": field.value,
+                                    "페이지": field.page,
+                                }
+                                for category, field in detail_fields
+                            ],
+                            width="stretch",
+                            hide_index=True,
+                            column_config={
+                                "구분": st.column_config.TextColumn(width="small"),
+                                "항목": st.column_config.TextColumn(width="small"),
+                                "감지값": st.column_config.TextColumn(width="large"),
+                                "페이지": st.column_config.NumberColumn(width="small"),
+                            },
+                        )
+                        st.caption(
+                            "표의 값은 PDF 텍스트에서 자동 감지한 후보입니다. 시험 기준과 단위는 원문을 함께 확인하세요."
+                        )
+
                 with st.expander("PDF에서 읽은 텍스트 확인", expanded=False):
                     st.text_area(
                         "추출 텍스트 미리보기",
