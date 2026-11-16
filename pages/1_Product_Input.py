@@ -1,4 +1,5 @@
 import json
+from hashlib import sha256
 
 import streamlit as st
 
@@ -6,6 +7,13 @@ from texreg_core.data_loader import load_regulations
 from texreg_core.history import save_diagnosis_snapshot
 from texreg_core.matching import diagnose_product
 from texreg_core.palette_runtime import inject_brand_palette
+from texreg_core.pdf_reader import (
+    PdfInsights,
+    PdfReadError,
+    analyze_pdf_document,
+    preview_text,
+    read_pdf_document,
+)
 from texreg_core.portal_ui import inject_portal_styles, render_process_steps
 from texreg_core.sidebar_runtime import install_sidebar_patch
 
@@ -129,6 +137,133 @@ def _join(values):
     return ", ".join(values) if values else "없음"
 
 
+def _merge_pdf_values(key, detected, overwrite=False):
+    """PDF 감지 다중값을 기존 사용자의 선택과 안전하게 합친다."""
+    detected = list(dict.fromkeys(value for value in detected if value))
+    if not detected:
+        return False
+    existing = list(st.session_state.get(key) or [])
+    known_detected = [value for value in detected if value != "미확인"]
+    if known_detected:
+        detected = known_detected
+        existing = [value for value in existing if value != "미확인"]
+    st.session_state[key] = detected if overwrite else list(dict.fromkeys([*existing, *detected]))
+    return True
+
+
+def _composition_is_default():
+    """처음 표시되는 Polyester 100% 기본값인지 확인한다."""
+    if st.session_state.get("composition_unknown", False):
+        return False
+    for index in range(1, 5):
+        expected_material = "Polyester" if index == 1 else "선택 안 함"
+        expected_ratio = 100.0 if index == 1 else 0.0
+        if st.session_state.get(f"material_{index}", expected_material) != expected_material:
+            return False
+        if float(st.session_state.get(f"material_ratio_{index}", expected_ratio)) != expected_ratio:
+            return False
+        if st.session_state.get(f"custom_material_{index}", ""):
+            return False
+    return True
+
+
+def _apply_pdf_insights(insights: PdfInsights, overwrite=False):
+    """검토를 마친 PDF 후보값을 기존 입력 위젯의 세션 키에 반영한다."""
+    applied = []
+
+    if insights.product_name and (overwrite or not st.session_state.get("product_name", "").strip()):
+        st.session_state["product_name"] = insights.product_name
+        applied.append("제품명")
+
+    if _merge_pdf_values("destinations", insights.destinations, overwrite):
+        applied.append("판매·수출국")
+
+    material_candidates = list(insights.materials)
+    replace_composition = overwrite or _composition_is_default()
+    if material_candidates and len(material_candidates) <= 4 and replace_composition:
+        for index in range(1, 5):
+            st.session_state[f"material_{index}"] = "선택 안 함"
+            st.session_state[f"material_ratio_{index}"] = 0.0
+            st.session_state[f"custom_material_{index}"] = ""
+        for index, candidate in enumerate(material_candidates, start=1):
+            st.session_state[f"material_{index}"] = candidate.name
+            st.session_state[f"material_ratio_{index}"] = float(candidate.ratio or 0.0)
+        st.session_state["composition_unknown"] = not insights.composition_complete
+        applied.append("소재·혼용률" if insights.composition_complete else "소재")
+
+    multi_value_fields = (
+        ("membranes", insights.membranes, "Membrane"),
+        ("coatings", insights.coatings, "Coating"),
+        ("laminations", insights.laminations, "Lamination"),
+        ("finishings", insights.finishings, "Finishing"),
+        ("processes", insights.processes, "가공방법"),
+        ("chemicals", insights.chemicals, "화학물질"),
+    )
+    for key, detected, label in multi_value_fields:
+        if _merge_pdf_values(key, detected, overwrite):
+            applied.append(label)
+
+    custom_details = []
+    if insights.trade_name:
+        custom_details.append(f"문서 상품명: {insights.trade_name}")
+    if insights.cas_numbers:
+        custom_details.append(f"CAS: {', '.join(insights.cas_numbers)}")
+    if insights.pfas_status in {"PFAS 사용·포함 가능", "상충 정보"} and not any(
+        value in insights.chemicals for value in ("PFOA", "PFOS", "C6 fluorotelomer 발수제", "C8 fluorotelomer 발수제")
+    ):
+        custom_details.append("PFAS 가능 성분 감지")
+
+    if custom_details:
+        chemical_source = insights.chemicals if overwrite else st.session_state.get("chemicals")
+        existing_chemicals = [
+            value
+            for value in (chemical_source or [])
+            if value != "미확인"
+        ]
+        if "기타" not in existing_chemicals:
+            existing_chemicals.append("기타")
+        st.session_state["chemicals"] = existing_chemicals
+        existing_custom = "" if overwrite else st.session_state.get("custom_chemical", "").strip()
+        parts = [value for value in [existing_custom, *custom_details] if value]
+        st.session_state["custom_chemical"] = " / ".join(dict.fromkeys(parts))
+        applied.append("CAS·문서 상품명")
+
+    return list(dict.fromkeys(applied))
+
+
+def _pdf_analysis(uploaded_file):
+    """같은 세션에서 같은 파일을 다시 파싱하지 않도록 분석 결과를 보관한다."""
+    file_bytes = uploaded_file.getvalue()
+    digest = sha256(file_bytes).hexdigest()
+    cached = st.session_state.get("_pdf_analysis")
+    if cached and cached.get("digest") == digest:
+        return cached
+
+    # 새 문서로 바뀌면 이전 문서에서 선택했던 덮어쓰기 동의를 이어받지 않는다.
+    st.session_state["overwrite_pdf_values"] = False
+    st.session_state.pop("_pdf_apply_notice", None)
+    try:
+        document = read_pdf_document(file_bytes)
+        insights = analyze_pdf_document(document, uploaded_file.name)
+        result = {
+            "digest": digest,
+            "filename": uploaded_file.name,
+            "document": document,
+            "insights": insights,
+            "error": "",
+        }
+    except PdfReadError as error:
+        result = {
+            "digest": digest,
+            "filename": uploaded_file.name,
+            "document": None,
+            "insights": None,
+            "error": str(error),
+        }
+    st.session_state["_pdf_analysis"] = result
+    return result
+
+
 page_heading(
     "PRODUCT PROFILE",
     "제품 정보 입력",
@@ -146,6 +281,136 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+# PDF 자동 읽기
+with st.container(border=True):
+    st.markdown(
+        """
+        <div class="input-section-heading">
+            <span class="input-section-number">PDF</span>
+            <div><strong>제품 문서 자동 읽기</strong><span>제품 사양서·SDS·TDS에서 입력 후보를 찾아 드립니다.</span></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    uploaded_pdf = st.file_uploader(
+        "제품 문서 PDF",
+        type=["pdf"],
+        help="15MB·60페이지 이하의 텍스트형 PDF를 지원합니다. 업로드 원문은 진단 이력에 저장하지 않습니다.",
+        key="product_pdf",
+    )
+    st.caption(
+        "파일을 선택하면 즉시 텍스트를 읽습니다. 감지 결과를 확인한 뒤 버튼을 눌러 입력란에 반영하세요."
+    )
+
+    if uploaded_pdf is None:
+        st.session_state.pop("_pdf_analysis", None)
+    else:
+        with st.spinner("PDF 내용을 읽고 제품 정보를 찾는 중입니다…"):
+            pdf_result = _pdf_analysis(uploaded_pdf)
+
+        if pdf_result["error"]:
+            st.error(pdf_result["error"])
+        else:
+            document = pdf_result["document"]
+            insights = pdf_result["insights"]
+            notice = st.session_state.pop("_pdf_apply_notice", None)
+            if notice:
+                st.success(notice)
+
+            metric_page, metric_text, metric_type = st.columns(3)
+            metric_page.metric("페이지", f"{document.page_count}쪽")
+            metric_text.metric("읽은 텍스트", f"{document.extracted_char_count:,}자")
+            metric_type.metric("문서 유형", " · ".join(insights.document_types))
+
+            if document.needs_ocr:
+                st.warning(
+                    "텍스트를 거의 찾지 못했습니다. 스캔 이미지라면 OCR(문자 인식) 처리 후 다시 업로드해 주세요."
+                )
+            else:
+                summary_left, summary_right = st.columns(2, gap="large")
+                with summary_left:
+                    st.markdown("**기본·소재 감지 결과**")
+                    if insights.product_name:
+                        st.write(f"제품명 후보 · {insights.product_name}")
+                    if insights.trade_name:
+                        st.write(f"문서 상품명 · {insights.trade_name}")
+                    if insights.materials:
+                        material_summary = ", ".join(
+                            f"{item.name} {item.ratio:g}%" if item.ratio is not None else item.name
+                            for item in insights.materials
+                        )
+                        st.write(f"소재 · {material_summary}")
+                    if insights.destinations:
+                        st.write(f"판매·수출국 · {', '.join(insights.destinations)}")
+                    if not any(
+                        [
+                            insights.product_name,
+                            insights.trade_name,
+                            insights.materials,
+                            insights.destinations,
+                        ]
+                    ):
+                        st.caption("기본 정보 후보를 찾지 못했습니다.")
+
+                with summary_right:
+                    st.markdown("**구조·화학물질 감지 결과**")
+                    structure_values = [
+                        *insights.membranes,
+                        *insights.coatings,
+                        *insights.laminations,
+                        *insights.finishings,
+                    ]
+                    if structure_values:
+                        st.write(f"구조·후가공 · {', '.join(structure_values)}")
+                    if insights.processes:
+                        st.write(f"공정 · {', '.join(insights.processes)}")
+                    if insights.chemicals:
+                        st.write(f"화학물질 · {', '.join(insights.chemicals)}")
+                    if insights.cas_numbers:
+                        st.write(f"CAS No. · {', '.join(insights.cas_numbers)}")
+                    st.write(f"PFAS 판정 후보 · {insights.pfas_status}")
+
+                if insights.warnings:
+                    st.warning("\n".join(f"• {message}" for message in insights.warnings))
+
+                with st.expander("PDF에서 읽은 텍스트 확인", expanded=False):
+                    st.text_area(
+                        "추출 텍스트 미리보기",
+                        value=preview_text(document),
+                        height=260,
+                        disabled=True,
+                        key=f"pdf_preview_{pdf_result['digest'][:12]}",
+                    )
+                    st.caption("미리보기는 최대 6,000자이며 PDF 원문은 진단 이력에 저장되지 않습니다.")
+
+                apply_left, apply_right = st.columns([1.35, 1])
+                with apply_left:
+                    overwrite_pdf_values = st.checkbox(
+                        "기존 작성값도 PDF 감지값으로 덮어쓰기",
+                        value=False,
+                        key="overwrite_pdf_values",
+                    )
+                with apply_right:
+                    apply_pdf = st.button(
+                        "감지 정보 입력란에 반영",
+                        type="primary",
+                        width="stretch",
+                        disabled=not insights.has_prefill_data,
+                        key="apply_pdf_values",
+                    )
+                if apply_pdf:
+                    applied_labels = _apply_pdf_insights(insights, overwrite_pdf_values)
+                    if applied_labels:
+                        st.session_state["_pdf_apply_notice"] = (
+                            f"{', '.join(applied_labels)} 정보를 입력란에 반영했습니다."
+                        )
+                    else:
+                        st.session_state["_pdf_apply_notice"] = (
+                            "기존 작성값을 보존했습니다. 덮어쓰기가 필요하면 옵션을 선택해 주세요."
+                        )
+                    st.rerun()
 
 
 # ① 기본 정보
@@ -232,23 +497,25 @@ with st.container(border=True):
 
     composition_inputs = []
     for index in range(1, 5):
+        material_key = f"material_{index}"
+        ratio_key = f"material_ratio_{index}"
+        st.session_state.setdefault(material_key, "Polyester" if index == 1 else "선택 안 함")
+        st.session_state.setdefault(ratio_key, 100.0 if index == 1 else 0.0)
         material_col, ratio_col, custom_col = st.columns([2.0, 1.0, 2.0], gap="small")
         with material_col:
             material_choice = st.selectbox(
                 f"구성 {index} 소재",
                 MATERIAL_OPTIONS,
-                index=1 if index == 1 else 0,
-                key=f"material_{index}",
+                key=material_key,
             )
         with ratio_col:
             ratio = st.number_input(
                 f"구성 {index} 함량 (%)",
                 min_value=0.0,
                 max_value=100.0,
-                value=100.0 if index == 1 else 0.0,
                 step=1.0,
                 disabled=composition_unknown,
-                key=f"material_ratio_{index}",
+                key=ratio_key,
             )
         with custom_col:
             custom_material = st.text_input(

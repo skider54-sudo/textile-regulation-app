@@ -1,11 +1,14 @@
 """상세 제품 입력 화면의 혼용률·구조·공정 추적 동작을 검증한다."""
 
 import json
+from io import BytesIO
 import os
 import tempfile
 import unittest
 from pathlib import Path
 
+from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 from streamlit.testing.v1 import AppTest
 
 
@@ -15,6 +18,43 @@ ROOT = Path(__file__).resolve().parents[1]
 def _by_label(elements, label):
     """위젯 순서가 바뀌어도 레이블로 안정적으로 찾는다."""
     return next(element for element in elements if element.label == label)
+
+
+def _text_pdf(lines):
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=612, height=792)
+    font_reference = writer._add_object(
+        DictionaryObject(
+            {
+                NameObject("/Type"): NameObject("/Font"),
+                NameObject("/Subtype"): NameObject("/Type1"),
+                NameObject("/BaseFont"): NameObject("/Helvetica"),
+            }
+        )
+    )
+    page[NameObject("/Resources")] = DictionaryObject(
+        {
+            NameObject("/Font"): DictionaryObject(
+                {NameObject("/F1"): font_reference}
+            )
+        }
+    )
+    escaped = [
+        line.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        for line in lines
+    ]
+    stream = DecodedStreamObject()
+    stream.set_data(
+        (
+            "BT /F1 11 Tf 50 740 Td 15 TL "
+            + " Tj T* ".join(f"({line})" for line in escaped)
+            + " Tj ET"
+        ).encode("latin-1")
+    )
+    page[NameObject("/Contents")] = writer._add_object(stream)
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
 
 
 class ProductInputTest(unittest.TestCase):
@@ -104,6 +144,71 @@ class ProductInputTest(unittest.TestCase):
         action_list = next(value for value in markdown_values if 'class="action-list"' in value)
         self.assertNotIn("\n", action_list)
         self.assertEqual(action_list.count('class="action-step"'), 3)
+
+    def test_pdf_upload_prefills_detected_product_fields(self) -> None:
+        app = self._open_input_page()
+        pdf_bytes = _text_pdf(
+            [
+                "PRODUCT SPECIFICATION",
+                "Product Name: Alpine Rain Jacket",
+                "Fiber Content: Polyester 85%, Cotton 15%",
+                "Target Market: EU, Japan",
+                "Process: knitted and dyeing",
+                "Chemical: PFOA",
+            ]
+        )
+
+        app.session_state["processes"] = ["미확인"]
+        app.session_state["chemicals"] = ["미확인", "PFOS"]
+
+        _by_label(app.file_uploader, "제품 문서 PDF").set_value(
+            ("alpine-spec.pdf", pdf_bytes, "application/pdf")
+        )
+        app.run(timeout=30)
+
+        self.assertEqual(len(app.exception), 0)
+        markdown_values = [element.value for element in app.markdown]
+        self.assertTrue(any("Alpine Rain Jacket" in value for value in markdown_values))
+        _by_label(app.button, "감지 정보 입력란에 반영").click().run(timeout=30)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertEqual(app.session_state["product_name"], "Alpine Rain Jacket")
+        self.assertEqual(app.session_state["destinations"], ["EU", "일본"])
+        self.assertEqual(app.session_state["material_1"], "Polyester")
+        self.assertEqual(app.session_state["material_ratio_1"], 85.0)
+        self.assertEqual(app.session_state["material_2"], "Cotton")
+        self.assertEqual(app.session_state["material_ratio_2"], 15.0)
+        self.assertFalse(app.session_state["composition_unknown"])
+        self.assertIn("편직", app.session_state["processes"])
+        self.assertIn("염색", app.session_state["processes"])
+        self.assertNotIn("미확인", app.session_state["processes"])
+        self.assertIn("PFOA", app.session_state["chemicals"])
+        self.assertNotIn("미확인", app.session_state["chemicals"])
+
+    def test_sds_trade_name_replaces_unknown_chemical_sentinel(self) -> None:
+        app = self._open_input_page()
+        pdf_bytes = _text_pdf(
+            [
+                "SAFETY DATA SHEET",
+                "Product Name: NeutralSoft X",
+                "SECTION 1: Identification of the substance and supplier",
+            ]
+        )
+        app.session_state["chemicals"] = ["미확인"]
+
+        _by_label(app.file_uploader, "제품 문서 PDF").set_value(
+            ("neutral-soft-sds.pdf", pdf_bytes, "application/pdf")
+        )
+        app.run(timeout=30)
+        _by_label(
+            app.checkbox,
+            "기존 작성값도 PDF 감지값으로 덮어쓰기",
+        ).set_value(True).run(timeout=30)
+        _by_label(app.button, "감지 정보 입력란에 반영").click().run(timeout=30)
+
+        self.assertEqual(len(app.exception), 0)
+        self.assertEqual(app.session_state["chemicals"], ["기타"])
+        self.assertIn("NeutralSoft X", app.session_state["custom_chemical"])
 
     def test_composition_total_must_be_100_percent(self) -> None:
         app = self._open_input_page()
